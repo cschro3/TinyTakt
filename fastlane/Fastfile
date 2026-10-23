@@ -1,0 +1,28 @@
+# Fastlane-Gerüst. Zugangsdaten ausschließlich über Umgebungsvariablen/Secrets – nie ins Repository.
+# Verwendung siehe docs/RELEASE.md. Ohne Zugangsdaten sind diese Lanes nicht lauffähig.
+
+default_platform(:android)
+
+platform :android do
+  desc "AAB in den internen Test-Track hochladen (draft, kein Produktionsrelease)"
+  lane :internal do
+    upload_to_play_store(
+      track: "internal",
+      aab: "build/app/outputs/bundle/release/app-release.aab",
+      release_status: "draft",
+      json_key_data: ENV["PLAY_SERVICE_ACCOUNT_JSON"],
+      skip_upload_metadata: true, skip_upload_images: true, skip_upload_screenshots: true
+    )
+  end
+end
+
+platform :ios do
+  desc "Signierten Build zu TestFlight hochladen (kein App-Review-Antrag)"
+  lane :beta do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"], key_content: ENV["ASC_KEY_P8"]
+    )
+    build_app(workspace: "ios/Runner.xcworkspace", scheme: "Runner", export_method: "app-store")
+    upload_to_testflight(api_key: api_key, skip_waiting_for_build_processing: true)
+  end
+end
