@@ -37,7 +37,9 @@ Future<void> main() async {
   await entitlements.load();
   final audio = AudioService();
   // Web-Vorschau: keine Systembenachrichtigungen, kein Store.
-  final NotificationPort notifications = kIsWeb ? NoopNotificationService() : LocalNotificationService();
+  final NotificationPort notifications = kIsWeb
+      ? NoopNotificationService()
+      : LocalNotificationService();
   final timer = TimerController(
     engine: TimerEngine(SystemClock()),
     settings: settings,
@@ -65,7 +67,8 @@ Future<void> main() async {
 
   // Nur für die Web-Vorschau (--dart-define=PREVIEW_PRO=true): Pro-Inhalte zum Ausprobieren.
   // Store-Builds setzen diese Option nie; auf Mobilgeräten wird sie ignoriert.
-  if (kIsWeb && _previewPro) await entitlements.grant(transactionId: 'web-preview');
+  if (kIsWeb && _previewPro)
+    await entitlements.grant(transactionId: 'web-preview');
 
   final deps = AppDeps(
     settings: settings,

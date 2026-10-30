@@ -880,6 +880,69 @@ const List<SoundSpec> sounds = [
     category: 'Entspannung',
   ),
   SoundSpec(
+    'music_piano',
+    'Klaviertraum',
+    'Piano dream',
+    SoundKind.music,
+    'audio/music_piano_dream.m4a',
+    pro: false,
+    category: 'Entspannung',
+  ),
+  SoundSpec(
+    'music_ukulele',
+    'Sonnenschein-Ukulele',
+    'Sunshine ukulele',
+    SoundKind.music,
+    'audio/music_ukulele.m4a',
+    pro: false,
+    category: 'Fröhlich',
+  ),
+  SoundSpec(
+    'music_waltz',
+    'Spieluhr-Walzer',
+    'Music box waltz',
+    SoundKind.music,
+    'audio/music_waltz.m4a',
+
+    category: 'Schlafenszeit',
+  ),
+  SoundSpec(
+    'music_bossa',
+    'Marimba-Bossa',
+    'Marimba bossa',
+    SoundKind.music,
+    'audio/music_bossa.m4a',
+
+    category: 'Fröhlich',
+  ),
+  SoundSpec(
+    'music_rain',
+    'Regen und Glöckchen',
+    'Rain and bells',
+    SoundKind.music,
+    'audio/music_rain.m4a',
+
+    category: 'Natur',
+  ),
+  SoundSpec(
+    'music_march',
+    'Kleiner Marsch',
+    'Little march',
+    SoundKind.music,
+    'audio/music_march.m4a',
+
+    category: 'Abenteuer',
+  ),
+  SoundSpec(
+    'music_lofi',
+    'Ruhige Pause',
+    'Quiet break',
+    SoundKind.music,
+    'audio/music_lofi.m4a',
+
+    category: 'Entspannung',
+  ),
+  SoundSpec(
     'alarm_bell',
     'Glöckchen',
     'Little bell',

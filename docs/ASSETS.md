@@ -1,7 +1,7 @@
 # Assets, Herkunft und Release-Blocker
 
 * **Figuren (46), Welten (9), Timer-Darstellungen (5), Held „Takti“, App-Icon, Splash:** eigene Vektorzeichnungen im Dart-Code (`lib/presentation/painters`), keine Fremd-/Markenfiguren, keine Emojis, keine Platzhalterbilder. Renderblatt: `build/sheets/characters.png` (per `test/tools/character_sheet_test.dart`).
-* **Musik (6) und Alarme (6):** synthetisch erzeugt von `tools/generate_audio.py` (eigene Kompositionen, keine Samples/fremden Melodien), AAC, ~1,3 MB gesamt.
+* **Musik (13) und Alarme (6):** synthetisch erzeugt von `tools/generate_audio.py` (eigene Kompositionen, keine Samples/fremden Melodien), AAC, ~3,3 MB gesamt; Stile: Entspannung, Fröhlich, Natur, Abenteuer, Schlafenszeit (Klavier, Ukulele, Walzer, Bossa, Regen, Marsch, Lo-Fi).
 * **Schrift:** Nunito (SIL Open Font License 1.1), `assets/fonts/OFL.txt`.
 
 ## Release-Blocker (Assets)
