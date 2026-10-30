@@ -6,6 +6,7 @@ import '../../app/deps.dart';
 import '../../domain/catalog.dart';
 import '../painters/character_painter.dart';
 import '../painters/scene_painter.dart';
+import '../painters/picture_painters.dart';
 import '../painters/timer_painters.dart';
 import '../theme.dart';
 import 'pro_screen.dart';
@@ -353,6 +354,17 @@ class _StylePreview extends CustomPainter {
         RainbowPainter(fraction: 0.6).paint(canvas, sz);
       case TimerStyle.hourglass:
         HourglassPainter(fraction: 0.55, t: 0, calm: true).paint(canvas, sz);
+      case TimerStyle.iceCream:
+      case TimerStyle.candle:
+      case TimerStyle.plant:
+      case TimerStyle.pizza:
+      case TimerStyle.puzzle:
+        PicturePainter(
+          style: s,
+          fraction: s == TimerStyle.plant ? 0.4 : 0.6,
+          t: 0,
+          calm: true,
+        ).paint(canvas, sz);
     }
     canvas.restore();
   }

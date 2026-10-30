@@ -795,7 +795,12 @@ enum TimerStyle {
   adventure('Abenteuer', 'Adventure', false),
   fill('Füllstand', 'Fill level', false),
   rainbow('Regenbogen', 'Rainbow', true),
-  hourglass('Sanduhr', 'Hourglass', true);
+  hourglass('Sanduhr', 'Hourglass', true),
+  iceCream('Eis schmilzt', 'Melting ice cream', true),
+  candle('Kerze', 'Candle', true),
+  plant('Blume wächst', 'Growing flower', true),
+  pizza('Pizza', 'Pizza', true),
+  puzzle('Bildpuzzle', 'Picture puzzle', true);
 
   const TimerStyle(this.de, this.en, this.pro);
   final String de, en;

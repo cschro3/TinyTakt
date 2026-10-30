@@ -8,13 +8,17 @@ void main() {
     final ids = <String>{};
     for (final s in sounds) {
       expect(ids.add(s.id), isTrue, reason: 'doppelte ID ${s.id}');
-      if (s.asset.isNotEmpty) expect(File('assets/${s.asset}').existsSync(), isTrue, reason: s.asset);
+      if (s.asset.isNotEmpty)
+        expect(File('assets/${s.asset}').existsSync(), isTrue, reason: s.asset);
     }
   });
 
   test('Free enthält genug Musik und Alarme, Pro erweitert', () {
     final music = sounds.where((s) => s.kind == SoundKind.music);
-    expect(music.where((s) => !s.pro && s.asset.isNotEmpty).length, greaterThanOrEqualTo(2));
+    expect(
+      music.where((s) => !s.pro && s.asset.isNotEmpty).length,
+      greaterThanOrEqualTo(2),
+    );
     expect(music.where((s) => s.pro).length, greaterThanOrEqualTo(5));
     expect(music.length, greaterThanOrEqualTo(13));
   });

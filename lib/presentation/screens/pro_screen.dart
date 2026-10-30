@@ -49,8 +49,8 @@ class ProScreen extends StatelessWidget {
             (
               Icons.hourglass_bottom_rounded,
               context.tr(
-                'Regenbogen- und Sanduhr-Timer',
-                'Rainbow and hourglass timers',
+                'Regenbogen-, Sanduhr- und Bild-Timer',
+                'Rainbow, hourglass and picture timers',
               ),
             ),
             (

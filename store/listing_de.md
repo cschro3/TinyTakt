@@ -21,7 +21,7 @@ Wie lange sind zehn Minuten? Für kleine Kinder ist das schwer zu begreifen. Tin
 
 **Datenschutz:** Keine Werbung, kein Tracking, keine Registrierung. Alle Daten bleiben auf dem Gerät.
 
-**Gratis & Pro:** Die App ist dauerhaft kostenlos nutzbar. Mit dem einmaligen Kauf „Pro“ (kein Abo) erhalten Sie alle 46 Figuren, alle Welten, Regenbogen- und Sanduhr-Timer, zusätzliche Musik und Alarme, eigene Fotos als Motiv, eigene Vorlagen und mehrere Kinderprofile. Käufe sind nur hinter einer Elternsicherung möglich. Der Kauf gilt je Plattform (iOS/Android) und Store-Konto.
+**Gratis & Pro:** Die App ist dauerhaft kostenlos nutzbar. Mit dem einmaligen Kauf „Pro“ (kein Abo) erhalten Sie alle 46 Figuren, alle Welten, Regenbogen-, Sanduhr- und Bild-Timer (Eis, Kerze, Blume, Pizza, Puzzle), zusätzliche Musik und Alarme, eigene Fotos als Motiv, eigene Vorlagen und mehrere Kinderprofile. Käufe sind nur hinter einer Elternsicherung möglich. Der Kauf gilt je Plattform (iOS/Android) und Store-Konto.
 
 *Die Zustellung von Benachrichtigungen hängt vom Betriebssystem ab (z. B. Energiesparmodus, Nicht stören) und kann nicht garantiert werden.
 

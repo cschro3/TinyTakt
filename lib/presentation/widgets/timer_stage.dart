@@ -7,6 +7,7 @@ import 'package:flutter/scheduler.dart';
 import '../../domain/catalog.dart';
 import '../../domain/timer_engine.dart';
 import '../painters/character_painter.dart';
+import '../painters/picture_painters.dart';
 import '../painters/timer_painters.dart';
 
 /// Motiv in der Bühne: Figur oder eigenes Foto (Pro).
@@ -230,6 +231,35 @@ class _TimerStageState extends State<TimerStage>
                           right: 0,
                           bottom: side * 0.02,
                           child: _figure(side * 0.3, t),
+                        ),
+                        if (widget.countdown != null) _countdown(side),
+                      ],
+                    );
+                  case TimerStyle.iceCream:
+                  case TimerStyle.candle:
+                  case TimerStyle.plant:
+                  case TimerStyle.pizza:
+                  case TimerStyle.puzzle:
+                    // Das Bild ist die Zeit; die Figur schaut klein von unten rechts zu.
+                    return Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Padding(
+                            padding: EdgeInsets.all(side * 0.04),
+                            child: CustomPaint(
+                              painter: PicturePainter(
+                                style: widget.style,
+                                fraction: frac,
+                                t: t,
+                                calm: calm,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: side * 0.02,
+                          child: _figure(side * 0.26, t),
                         ),
                         if (widget.countdown != null) _countdown(side),
                       ],
