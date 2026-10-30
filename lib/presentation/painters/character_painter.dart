@@ -118,6 +118,18 @@ class CharacterPainter extends CustomPainter {
         _egg(c);
       case Archetype.xmasTree:
         _xmas(c);
+      case Archetype.jellyfish:
+        _jellyfish(c);
+      case Archetype.astronaut:
+        _astronaut(c);
+      case Archetype.cloud:
+        _cloud(c);
+      case Archetype.cactus:
+        _cactus(c);
+      case Archetype.ghost:
+        _ghost(c);
+      case Archetype.ladybug:
+        _ladybug(c);
     }
   }
 
@@ -362,12 +374,22 @@ class CharacterPainter extends CustomPainter {
     }
     // Hörner / Horn
     if (s.horn) _horn(c, s, headY, headR);
+    if (s.antlers) _antlers(c, s, headY, headR);
 
     // Schnauze
     _snout(c, s, headY, headR);
 
     // Gesicht
     final ey = headY - 0.04;
+    if (s.eyePatch) {
+      for (final sx in [-1.0, 1.0]) {
+        c.save();
+        c.translate(sx * headR * 0.45, ey);
+        c.rotate(sx * 0.35);
+        _oval(c, 0, 0, 0.13, 0.1, s.earColor ?? s.accent);
+        c.restore();
+      }
+    }
     _eyes(c, 0, ey, headR * 0.45, 0.065);
     _cheeks(c, 0, headY + 0.14, headR * 0.7, 0.07);
     if (s.snout == Snout.none) {
@@ -375,8 +397,8 @@ class CharacterPainter extends CustomPainter {
         c,
         0,
         headY + 0.07,
-        0.045,
-        0.032,
+        s.bigNose ? 0.08 : 0.045,
+        s.bigNose ? 0.06 : 0.032,
         s.accent == s.body ? _ink : _shade(s.accent, -0.1),
       );
       _smile(c, 0, headY + 0.13, 0.09);
@@ -437,7 +459,7 @@ class CharacterPainter extends CustomPainter {
             hy - hr * 0.72,
             0.16,
             0.16,
-            s.mane ? s.maneColor : s.body,
+            s.earColor ?? (s.mane ? s.maneColor : s.body),
           );
           _oval(
             c,
@@ -445,7 +467,9 @@ class CharacterPainter extends CustomPainter {
             hy - hr * 0.72,
             0.09,
             0.09,
-            s.accent == s.body ? s.belly : s.accent,
+            s.earColor != null
+                ? s.earColor!
+                : (s.accent == s.body ? s.belly : s.accent),
           );
         }
       case EarType.tiny:
@@ -582,6 +606,9 @@ class CharacterPainter extends CustomPainter {
   void _bird(Canvas c) {
     final flap = calm ? 0.0 : math.sin(_tt * 6) * 0.12;
     final hen = spec.id == 'chicken';
+    final penguin = spec.id == 'penguin';
+    final duck = spec.id == 'duck';
+    final owl = spec.id == 'owl';
     // Schwanz
     for (var i = -1; i <= 1; i++) {
       c.save();
@@ -598,7 +625,16 @@ class CharacterPainter extends CustomPainter {
       c.restore();
     }
     _oval(c, 0, 0.3, 0.6, 0.62, spec.c1);
-    _oval(c, 0, 0.45, 0.38, 0.4, hen ? _w : _shade(spec.c1, 0.2));
+    _oval(
+      c,
+      0,
+      0.45,
+      0.38,
+      0.4,
+      (hen || penguin)
+          ? _w
+          : (owl ? const Color(0xFFF1DDB0) : _shade(spec.c1, 0.2)),
+    );
     // Flügel
     c.save();
     c.translate(-0.45, 0.25);
@@ -611,7 +647,20 @@ class CharacterPainter extends CustomPainter {
     _oval(c, 0, 0.2, 0.17, 0.34, _shade(spec.c1, -0.1));
     c.restore();
     // Kamm / Federn
-    if (hen) {
+    if (penguin || duck) {
+      // keine Haube
+    } else if (owl) {
+      for (final sx in [-1.0, 1.0]) {
+        c.drawPath(
+          Path()
+            ..moveTo(sx * 0.12, -0.52)
+            ..lineTo(sx * 0.3, -0.72)
+            ..lineTo(sx * 0.38, -0.4)
+            ..close(),
+          _f(spec.c3),
+        );
+      }
+    } else if (hen) {
       for (final dx in [-0.12, 0.0, 0.12]) {
         _oval(c, dx, -0.52, 0.09, 0.12, spec.c3);
       }
@@ -625,11 +674,25 @@ class CharacterPainter extends CustomPainter {
       }
     }
     // Schnabel
-    final b = Path()
-      ..moveTo(-0.11, 0.0)
-      ..lineTo(0.11, 0.0)
-      ..lineTo(0, 0.16)
-      ..close();
+    if (owl) {
+      for (final sx in [-1.0, 1.0]) {
+        _oval(c, sx * 0.24, -0.14, 0.15, 0.15, _w);
+      }
+    }
+    final b =
+        duck
+              ? (Path()..addOval(
+                  Rect.fromCenter(
+                    center: const Offset(0, 0.07),
+                    width: 0.34,
+                    height: 0.13,
+                  ),
+                ))
+              : Path()
+          ..moveTo(-0.11, 0.0)
+          ..lineTo(0.11, 0.0)
+          ..lineTo(0, 0.16)
+          ..close();
     c.drawPath(b, _f(spec.c2));
     if (hen) {
       _oval(c, 0, 0.2, 0.05, 0.08, spec.c3);
@@ -1326,6 +1389,139 @@ class CharacterPainter extends CustomPainter {
         );
         _eyes(c, -0.1, 0.0, 0.1, 0.055);
         _smile(c, -0.1, 0.18, 0.08);
+      case 'bus':
+        c.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-0.9, -0.3, 1.8, 0.9),
+            const Radius.circular(0.16),
+          ),
+          _f(spec.c1),
+        );
+        c.drawRect(
+          const Rect.fromLTWH(-0.9, 0.2, 1.8, 0.06),
+          _f(const Color(0xFF3A3A4A)),
+        );
+        for (var i = 0; i < 3; i++) {
+          c.drawRRect(
+            RRect.fromRectAndRadius(
+              Rect.fromLTWH(-0.8 + i * 0.4, -0.2, 0.3, 0.3),
+              const Radius.circular(0.05),
+            ),
+            _f(spec.c2),
+          );
+        }
+        c.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(0.42, -0.2, 0.4, 0.4),
+            const Radius.circular(0.06),
+          ),
+          _f(spec.c2),
+        );
+        _eyes(c, 0.62, -0.03, 0.1, 0.05);
+        _smile(c, 0.62, 0.1, 0.06);
+        _wheel(c, -0.5, 0.65, 0.19);
+        _wheel(c, 0.5, 0.65, 0.19);
+      case 'firetruck':
+        c.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(-0.9, -0.1, 1.8, 0.7),
+            const Radius.circular(0.12),
+          ),
+          _f(spec.c1),
+        );
+        c.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(0.3, -0.4, 0.55, 0.5),
+            const Radius.circular(0.1),
+          ),
+          _f(_shade(spec.c1, -0.06)),
+        );
+        c.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(0.4, -0.3, 0.35, 0.3),
+            const Radius.circular(0.05),
+          ),
+          _f(spec.c2),
+        );
+        for (var i = 0; i < 5; i++) {
+          c.drawLine(
+            Offset(-0.75 + i * 0.22, -0.28),
+            Offset(-0.75 + i * 0.22, -0.1),
+            _stroke(const Color(0xFFCBD2DC), 0.03),
+          );
+        }
+        c.drawLine(
+          const Offset(-0.78, -0.28),
+          const Offset(0.2, -0.28),
+          _stroke(const Color(0xFFCBD2DC), 0.05),
+        );
+        c.drawLine(
+          const Offset(-0.78, -0.2),
+          const Offset(0.2, -0.2),
+          _stroke(const Color(0xFFCBD2DC), 0.05),
+        );
+        final blink = calm || (_tt * 4).floor().isEven;
+        c.drawCircle(
+          const Offset(0.58, -0.45),
+          0.06,
+          _f(blink ? const Color(0xFF3F8FD9) : const Color(0xFF9CC5F0)),
+        );
+        _eyes(c, 0.575, -0.14, 0.09, 0.045);
+        _smile(c, 0.575, -0.02, 0.05);
+        _wheel(c, -0.55, 0.62, 0.19);
+        _wheel(c, -0.05, 0.62, 0.19);
+        _wheel(c, 0.6, 0.62, 0.19);
+      case 'heli':
+        final spin = calm ? 0.0 : math.cos(_tt * 25);
+        c.drawLine(
+          const Offset(0.2, 0.05),
+          const Offset(0.95, -0.15),
+          _stroke(_shade(spec.c1, -0.1), 0.12),
+        );
+        c.drawLine(
+          const Offset(0.95, -0.35),
+          const Offset(0.95, 0.05),
+          _stroke(const Color(0xFF3A3A4A), 0.04 + 0.03 * spin.abs()),
+        );
+        c.drawLine(
+          const Offset(0.0, -0.5),
+          const Offset(0.0, -0.35),
+          _stroke(const Color(0xFF3A3A4A), 0.05),
+        );
+        c.drawLine(
+          Offset(-0.85 * (0.4 + 0.6 * spin.abs()), -0.52),
+          Offset(0.85 * (0.4 + 0.6 * spin.abs()), -0.52),
+          _stroke(const Color(0xFF3A3A4A), 0.05),
+        );
+        _oval(c, -0.05, 0.1, 0.6, 0.42, spec.c1);
+        c.drawArc(
+          Rect.fromCenter(
+            center: const Offset(-0.3, 0.0),
+            width: 0.55,
+            height: 0.5,
+          ),
+          math.pi,
+          math.pi * 1.1,
+          true,
+          _f(spec.c2),
+        );
+        _eyes(c, -0.3, -0.02, 0.1, 0.05);
+        _smile(c, -0.3, 0.12, 0.06);
+        c.drawLine(
+          const Offset(-0.45, 0.62),
+          const Offset(0.45, 0.62),
+          _stroke(const Color(0xFF3A3A4A), 0.04),
+        );
+        c.drawLine(
+          const Offset(-0.25, 0.45),
+          const Offset(-0.3, 0.62),
+          _stroke(const Color(0xFF3A3A4A), 0.04),
+        );
+        c.drawLine(
+          const Offset(0.25, 0.45),
+          const Offset(0.3, 0.62),
+          _stroke(const Color(0xFF3A3A4A), 0.04),
+        );
       default:
         break;
     }
@@ -1761,6 +1957,307 @@ class CharacterPainter extends CustomPainter {
     }
     _eyes(c, 0, 0.3, 0.14, 0.05);
     _smile(c, 0, 0.45, 0.08);
+  }
+
+  // ---------- Weitere Figuren ----------
+  void _antlers(Canvas c, CritterStyle s, double hy, double hr) {
+    for (final sx in [-1.0, 1.0]) {
+      final p = Path()
+        ..moveTo(sx * 0.14, hy - hr * 0.9)
+        ..lineTo(sx * 0.22, hy - hr * 1.55)
+        ..moveTo(sx * 0.19, hy - hr * 1.2)
+        ..lineTo(sx * 0.4, hy - hr * 1.45)
+        ..moveTo(sx * 0.21, hy - hr * 1.42)
+        ..lineTo(sx * 0.1, hy - hr * 1.75);
+      c.drawPath(p, _stroke(const Color(0xFF8A5A2B), 0.05));
+    }
+  }
+
+  void _jellyfish(Canvas c) {
+    for (var i = 0; i < 5; i++) {
+      final x = -0.4 + i * 0.2;
+      final w = calm ? 0.0 : math.sin(_tt * 3 + i) * 0.07;
+      final p = Path()
+        ..moveTo(x, 0.2)
+        ..quadraticBezierTo(x + w, 0.5, x - w, 0.7)
+        ..quadraticBezierTo(x + w * 1.5, 0.85, x, 0.97);
+      c.drawPath(p, _stroke(spec.c3.withValues(alpha: 0.85), 0.06));
+    }
+    final dome = Path()
+      ..moveTo(-0.7, 0.25)
+      ..quadraticBezierTo(-0.7, -0.85, 0, -0.85)
+      ..quadraticBezierTo(0.7, -0.85, 0.7, 0.25)
+      ..quadraticBezierTo(0.45, 0.14, 0.23, 0.25)
+      ..quadraticBezierTo(0, 0.14, -0.23, 0.25)
+      ..quadraticBezierTo(-0.45, 0.14, -0.7, 0.25)
+      ..close();
+    c.drawPath(dome, _f(spec.c1));
+    c.drawOval(
+      Rect.fromCenter(
+        center: const Offset(-0.25, -0.5),
+        width: 0.3,
+        height: 0.14,
+      ),
+      _f(Colors.white.withValues(alpha: 0.45)),
+    );
+    for (final o in const [
+      Offset(0.35, -0.45),
+      Offset(0.0, -0.7),
+      Offset(-0.45, -0.2),
+    ]) {
+      c.drawCircle(o, 0.05, _f(spec.c2));
+    }
+    _eyes(c, 0, -0.2, 0.26, 0.07);
+    _cheeks(c, 0, -0.05, 0.42, 0.08);
+    _smile(c, 0, -0.04, 0.1);
+  }
+
+  void _astronaut(Canvas c) {
+    c.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(-0.62, -0.05, 0.28, 0.65),
+        const Radius.circular(0.1),
+      ),
+      _f(spec.c2),
+    );
+    for (final sx in [-1.0, 1.0]) {
+      _oval(c, sx * 0.58, 0.3, 0.13, 0.25, _shade(spec.c1, -0.05));
+      _oval(c, sx * 0.22, 0.88, 0.17, 0.09, _shade(spec.c1, -0.1));
+    }
+    _oval(c, 0, 0.4, 0.5, 0.5, spec.c1);
+    c.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(-0.2, 0.28, 0.4, 0.26),
+        const Radius.circular(0.06),
+      ),
+      _f(spec.c2),
+    );
+    c.drawCircle(const Offset(-0.1, 0.41), 0.04, _f(const Color(0xFF58B368)));
+    c.drawCircle(const Offset(0.02, 0.41), 0.04, _f(spec.c3));
+    c.drawCircle(const Offset(0, -0.3), 0.55, _f(spec.c1));
+    c.drawCircle(
+      const Offset(0, -0.3),
+      0.55,
+      _stroke(const Color(0xFFD5DAE6), 0.04),
+    );
+    final visor = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: const Offset(0, -0.28),
+        width: 0.78,
+        height: 0.58,
+      ),
+      const Radius.circular(0.28),
+    );
+    c.drawRRect(visor, _f(const Color(0xFF2A3A6B)));
+    c.drawRRect(visor.deflate(0.04), _f(const Color(0xFF3F5BA0)));
+    c.drawOval(
+      Rect.fromCenter(
+        center: const Offset(-0.22, -0.43),
+        width: 0.2,
+        height: 0.08,
+      ),
+      _f(Colors.white.withValues(alpha: 0.5)),
+    );
+    _eyes(c, 0, -0.27, 0.17, 0.06);
+    _smile(c, 0, -0.14, 0.08);
+  }
+
+  void _cloud(Canvas c) {
+    final drift = calm ? 0.0 : math.sin(_tt * 1.2) * 0.03;
+    c.save();
+    c.translate(drift, 0);
+    final shade = _f(spec.c2);
+    for (final o in const [
+      Offset(-0.45, 0.25),
+      Offset(0.45, 0.25),
+      Offset(-0.15, -0.1),
+      Offset(0.28, -0.05),
+    ]) {
+      c.drawCircle(o + const Offset(0, 0.04), 0.4, shade);
+    }
+    c.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(-0.85, 0.2, 1.7, 0.5),
+        const Radius.circular(0.25),
+      ),
+      shade,
+    );
+    for (final o in const [
+      Offset(-0.45, 0.25),
+      Offset(0.45, 0.25),
+      Offset(-0.15, -0.1),
+      Offset(0.28, -0.05),
+    ]) {
+      c.drawCircle(o, 0.4, _f(spec.c1));
+    }
+    c.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(-0.85, 0.15, 1.7, 0.5),
+        const Radius.circular(0.25),
+      ),
+      _f(spec.c1),
+    );
+    _eyes(c, 0, 0.12, 0.2, 0.065);
+    _cheeks(c, 0, 0.27, 0.32, 0.07);
+    _smile(c, 0, 0.28, 0.09);
+    c.restore();
+    if (!calm) {
+      for (var i = 0; i < 3; i++) {
+        final k = ((_tt * 0.9) + i / 3) % 1;
+        _oval(
+          c,
+          -0.3 + i * 0.3,
+          0.72 + k * 0.22,
+          0.03,
+          0.05,
+          spec.c3.withValues(alpha: 1 - k),
+        );
+      }
+    }
+  }
+
+  void _cactus(Canvas c) {
+    c.drawPath(
+      Path()
+        ..moveTo(-0.38, 0.62)
+        ..lineTo(0.38, 0.62)
+        ..lineTo(0.3, 0.97)
+        ..lineTo(-0.3, 0.97)
+        ..close(),
+      _f(const Color(0xFFE08A4C)),
+    );
+    c.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(-0.44, 0.56, 0.88, 0.12),
+        const Radius.circular(0.05),
+      ),
+      _f(const Color(0xFFC96F32)),
+    );
+    for (final sx in [-1.0, 1.0]) {
+      final arm = Path()
+        ..moveTo(sx * 0.2, 0.3)
+        ..lineTo(sx * 0.55, 0.3)
+        ..lineTo(sx * 0.55, -0.1);
+      c.drawPath(arm, _stroke(spec.c1, 0.2));
+    }
+    c.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(-0.3, -0.62, 0.6, 1.25),
+        const Radius.circular(0.3),
+      ),
+      _f(spec.c1),
+    );
+    c.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(-0.3, -0.62, 0.18, 1.2),
+        const Radius.circular(0.1),
+      ),
+      _f(spec.c2.withValues(alpha: 0.5)),
+    );
+    for (final o in const [
+      Offset(-0.2, 0.2),
+      Offset(0.22, 0.05),
+      Offset(-0.18, 0.45),
+      Offset(0.2, 0.4),
+      Offset(0.45, -0.2),
+      Offset(-0.5, -0.05),
+    ]) {
+      c.drawLine(o, o + const Offset(0.0, -0.04), _stroke(Colors.white, 0.02));
+    }
+    for (final a in [0.0, 1.2, 2.4, 3.6, 4.8]) {
+      _oval(
+        c,
+        math.cos(a) * 0.1,
+        -0.7 + math.sin(a) * 0.06,
+        0.07,
+        0.07,
+        spec.c3,
+      );
+    }
+    c.drawCircle(const Offset(0, -0.7), 0.05, _f(const Color(0xFFFFD84D)));
+    _eyes(c, 0, -0.2, 0.12, 0.055);
+    _cheeks(c, 0, -0.07, 0.2, 0.05);
+    _smile(c, 0, -0.06, 0.07);
+  }
+
+  void _ghost(Canvas c) {
+    final f = calm ? 0.0 : math.sin(_tt * 2.5) * 0.05;
+    c.save();
+    c.translate(0, f);
+    final body = Path()
+      ..moveTo(-0.55, 0.85)
+      ..lineTo(-0.55, -0.1)
+      ..quadraticBezierTo(-0.55, -0.85, 0, -0.85)
+      ..quadraticBezierTo(0.55, -0.85, 0.55, -0.1)
+      ..lineTo(0.55, 0.85)
+      ..quadraticBezierTo(0.4, 0.7, 0.27, 0.85)
+      ..quadraticBezierTo(0.13, 1.0, 0, 0.85)
+      ..quadraticBezierTo(-0.13, 0.7, -0.27, 0.85)
+      ..quadraticBezierTo(-0.4, 1.0, -0.55, 0.85)
+      ..close();
+    c.drawPath(body, _f(spec.c2));
+    c.save();
+    c.translate(0, -0.03);
+    c.drawPath(body, _f(spec.c1));
+    c.restore();
+    for (final sx in [-1.0, 1.0]) {
+      _oval(c, sx * 0.62, 0.25, 0.13, 0.2, spec.c1);
+    }
+    _eyes(c, 0, -0.25, 0.2, 0.08);
+    _cheeks(c, 0, -0.08, 0.34, 0.08);
+    _smile(c, 0, -0.06, 0.1);
+    c.restore();
+  }
+
+  void _ladybug(Canvas c) {
+    for (final sx in [-1.0, 1.0]) {
+      c.drawLine(
+        Offset(sx * 0.25, -0.6),
+        Offset(sx * 0.38, -0.88),
+        _stroke(spec.c2, 0.04),
+      );
+      c.drawCircle(Offset(sx * 0.38, -0.9), 0.05, _f(spec.c2));
+      for (final dy in [0.1, 0.35, 0.6]) {
+        c.drawLine(
+          Offset(sx * 0.5, dy),
+          Offset(sx * 0.78, dy + 0.1),
+          _stroke(spec.c2, 0.05),
+        );
+      }
+    }
+    c.drawCircle(const Offset(0, 0.3), 0.66, _f(spec.c1));
+    c.drawLine(
+      const Offset(0, -0.35),
+      const Offset(0, 0.96),
+      _stroke(spec.c2, 0.04),
+    );
+    for (final o in const [
+      Offset(-0.33, 0.1),
+      Offset(0.33, 0.1),
+      Offset(-0.38, 0.52),
+      Offset(0.38, 0.52),
+      Offset(-0.12, 0.75),
+      Offset(0.12, 0.75),
+    ]) {
+      c.drawCircle(o, 0.1, _f(spec.c2));
+    }
+    c.drawOval(
+      Rect.fromCenter(
+        center: const Offset(0, -0.35),
+        width: 0.92,
+        height: 0.62,
+      ),
+      _f(spec.c2),
+    );
+    for (final sx in [-1.0, 1.0]) {
+      _oval(c, sx * 0.22, -0.4, 0.13, 0.15, Colors.white);
+      c.drawCircle(Offset(sx * 0.22 + 0.02, -0.39), 0.065, _f(_ink));
+      c.drawCircle(Offset(sx * 0.22 + 0.04, -0.42), 0.022, _f(Colors.white));
+    }
+    final smile = Path()
+      ..moveTo(-0.1, -0.2)
+      ..quadraticBezierTo(0, -0.12, 0.1, -0.2);
+    c.drawPath(smile, _stroke(Colors.white, 0.03));
   }
 
   @override

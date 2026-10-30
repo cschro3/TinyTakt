@@ -18,7 +18,7 @@ Flutter 3.47.7 (stable), Dart 3.13. Android: minSdk laut Flutter, targetSdk 36. 
 ## Struktur
 | Pfad | Inhalt |
 |---|---|
-| `lib/domain` | `TimerEngine` (rein, testbar), `Clock`, Katalog (46 Figuren, 9 Welten, 10 Timer-Arten, Töne) |
+| `lib/domain` | `TimerEngine` (rein, testbar), `Clock`, Katalog (71 Figuren, 9 Welten, 10 Timer-Arten, Töne) |
 | `lib/data` | Einstellungen/Profile/Vorlagen, Entitlements (HMAC), Elternsicherung + PIN, Fotos |
 | `lib/platform` | Benachrichtigungen, Audio/TTS, Käufe (Store-Gateway, Verifier) |
 | `lib/app` | `TimerController` (Engine + Persistenz + Audio + Benachrichtigung), DI |

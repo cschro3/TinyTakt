@@ -9,8 +9,8 @@ import 'package:tinytakt/presentation/painters/character_painter.dart';
 /// Rendert alle Figuren in ein PNG (Sichtprüfung). Schreibt nach build/sheets.
 void main() {
   test('Figurenblatt rendern', () async {
-    const cols = 8;
-    const cell = 200.0;
+    const cols = 10;
+    const cell = 170.0;
     final rows = (characters.length / cols).ceil();
     final rec = ui.PictureRecorder();
     final canvas = Canvas(rec);

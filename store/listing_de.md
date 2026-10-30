@@ -21,7 +21,7 @@ Wie lange sind zehn Minuten? Für kleine Kinder ist das schwer zu begreifen. Tin
 
 **Datenschutz:** Keine Werbung, kein Tracking, keine Registrierung. Alle Daten bleiben auf dem Gerät.
 
-**Gratis & Pro:** Die App ist dauerhaft kostenlos nutzbar. Mit dem einmaligen Kauf „Pro“ (kein Abo) erhalten Sie alle 46 Figuren, alle Welten, Regenbogen-, Sanduhr- und Bild-Timer (Eis, Kerze, Blume, Pizza, Puzzle), zusätzliche Musik und Alarme, eigene Fotos als Motiv, eigene Vorlagen und mehrere Kinderprofile. Käufe sind nur hinter einer Elternsicherung möglich. Der Kauf gilt je Plattform (iOS/Android) und Store-Konto.
+**Gratis & Pro:** Die App ist dauerhaft kostenlos nutzbar. Mit dem einmaligen Kauf „Pro“ (kein Abo) erhalten Sie alle 71 Figuren, alle Welten, Regenbogen-, Sanduhr- und Bild-Timer (Eis, Kerze, Blume, Pizza, Puzzle), zusätzliche Musik und Alarme, eigene Fotos als Motiv, eigene Vorlagen und mehrere Kinderprofile. Käufe sind nur hinter einer Elternsicherung möglich. Der Kauf gilt je Plattform (iOS/Android) und Store-Konto.
 
 *Die Zustellung von Benachrichtigungen hängt vom Betriebssystem ab (z. B. Energiesparmodus, Nicht stören) und kann nicht garantiert werden.
 
@@ -29,10 +29,10 @@ Wie lange sind zehn Minuten? Für kleine Kinder ist das schwer zu begreifen. Tin
 TinyTakt erhebt und teilt keine Daten. Einstellungen, Profile (Spitznamen) und optionale Fotos liegen nur lokal.
 
 ## Screenshot-Texte
-1 Zeit sehen statt zählen · 2 Dein Held wandert zum Ziel · 3 Das Glas leert sich · 4 Regenbogen & Raketen · 5 46 Figuren zum Aussuchen · 6 Ruhe für Eltern · 7 Einmal kaufen – kein Abo
+1 Zeit sehen statt zählen · 2 Dein Held wandert zum Ziel · 3 Das Glas leert sich · 4 Regenbogen & Raketen · 5 71 Figuren zum Aussuchen · 6 Ruhe für Eltern · 7 Einmal kaufen – kein Abo
 
 ## Release Notes 1.0.0
-Erste Version: visueller Timer, 46 Figuren, 9 Welten, Kindermodus, Elternbereich, optionales Pro.
+Erste Version: visueller Timer, 71 Figuren, 9 Welten, Kindermodus, Elternbereich, optionales Pro.
 
 ## FAQ für Eltern
 **Ist TinyTakt wirklich werbefrei?** Ja, ohne Werbung, Tracking oder Analyse.

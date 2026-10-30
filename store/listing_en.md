@@ -21,7 +21,7 @@ How long is ten minutes? Young children find it hard to grasp. TinyTakt makes ti
 
 **Privacy:** No ads, no tracking, no sign-up. All data stays on the device.
 
-**Free & Pro:** The app stays free to use. The one-time “Pro” purchase (no subscription) unlocks all 46 characters, all worlds, rainbow, hourglass and picture timers (ice cream, candle, flower, pizza, puzzle), extra music and alarms, your own photos, custom templates and several child profiles. Purchases are only possible behind a parental gate. A purchase applies per platform (iOS/Android) and store account.
+**Free & Pro:** The app stays free to use. The one-time “Pro” purchase (no subscription) unlocks all 71 characters, all worlds, rainbow, hourglass and picture timers (ice cream, candle, flower, pizza, puzzle), extra music and alarms, your own photos, custom templates and several child profiles. Purchases are only possible behind a parental gate. A purchase applies per platform (iOS/Android) and store account.
 
 *Notification delivery depends on the operating system (e.g. battery saver, Do Not Disturb) and cannot be guaranteed.
 
@@ -29,7 +29,7 @@ How long is ten minutes? Young children find it hard to grasp. TinyTakt makes ti
 TinyTakt collects and shares no data. Settings, profiles (nicknames) and optional photos are stored locally only.
 
 ## Release notes 1.0.0
-First release: visual timer, 46 characters, 9 worlds, child mode, parents area, optional Pro.
+First release: visual timer, 71 characters, 9 worlds, child mode, parents area, optional Pro.
 
 ## Parent FAQ
 **Is it really ad-free?** Yes – no ads, tracking or analytics.

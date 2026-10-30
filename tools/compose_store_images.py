@@ -8,8 +8,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 FONT = Path("assets/fonts/Nunito-900.ttf")
 CAP = {
-    "de": {"1_timer": "Zeit sehen statt zählen", "2_adventure": "Dein Held wandert zum Ziel", "3_fill": "Das Glas leert sich", "4_space": "Regenbogen & Raketen", "5_characters": "46 Figuren zum Aussuchen", "6_parents": "Ruhe für Eltern", "7_pro": "Einmal kaufen – kein Abo"},
-    "en": {"1_timer": "See time, don’t count it", "2_adventure": "Your hero walks to the goal", "3_fill": "The glass slowly empties", "4_space": "Rainbows & rockets", "5_characters": "46 friends to choose from", "6_parents": "Peace of mind for parents", "7_pro": "Buy once – no subscription"},
+    "de": {"1_timer": "Zeit sehen statt zählen", "2_adventure": "Dein Held wandert zum Ziel", "3_fill": "Das Glas leert sich", "4_space": "Regenbogen & Raketen", "5_characters": "71 Figuren zum Aussuchen", "6_parents": "Ruhe für Eltern", "7_pro": "Einmal kaufen – kein Abo"},
+    "en": {"1_timer": "See time, don’t count it", "2_adventure": "Your hero walks to the goal", "3_fill": "The glass slowly empties", "4_space": "Rainbows & rockets", "5_characters": "71 friends to choose from", "6_parents": "Peace of mind for parents", "7_pro": "Buy once – no subscription"},
 }
 OUT = {"iphone_6_9": (1320, 2868), "ipad_13": (2064, 2752), "android_phone": (1080, 1920)}
 
