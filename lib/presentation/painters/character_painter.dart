@@ -130,6 +130,12 @@ class CharacterPainter extends CustomPainter {
         _ghost(c);
       case Archetype.ladybug:
         _ladybug(c);
+      case Archetype.fluffy:
+        c.save();
+        c.translate(0, 0.1);
+        c.scale(0.86);
+        _fluffy(c);
+        c.restore();
     }
   }
 
@@ -2258,6 +2264,276 @@ class CharacterPainter extends CustomPainter {
       ..moveTo(-0.1, -0.2)
       ..quadraticBezierTo(0, -0.12, 0.1, -0.2);
     c.drawPath(smile, _stroke(Colors.white, 0.03));
+  }
+
+  // ---------- NOVA-Freunde: flauschige Wesen mit Leuchteffekten ----------
+  /// Flauschige Fläche: Grundoval plus Kranz kleiner Fellbüschel (deterministisch, ohne Zufall pro Frame).
+  void _fluffBlob(
+    Canvas c,
+    Offset ctr,
+    double rx,
+    double ry,
+    Color col, {
+    int tufts = 22,
+    double tuft = 0.07,
+    double seed = 0,
+  }) {
+    for (var i = 0; i < tufts; i++) {
+      final a = i * 2 * math.pi / tufts + seed;
+      final wob = 1 + 0.07 * math.sin(i * 2.3 + seed * 5);
+      final p = ctr + Offset(math.cos(a) * rx * wob, math.sin(a) * ry * wob);
+      _oval(c, p.dx, p.dy, tuft, tuft * 1.15, col);
+    }
+    _oval(c, ctr.dx, ctr.dy, rx, ry, col);
+  }
+
+  void _glow(Canvas c, Offset ctr, double r, Color col, double strength) {
+    final pulse = calm ? 0.8 : 0.65 + 0.35 * math.sin(_tt * 2.2);
+    final rect = Rect.fromCircle(center: ctr, radius: r);
+    c.drawCircle(
+      ctr,
+      r,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            col.withValues(alpha: strength * pulse),
+            col.withValues(alpha: 0),
+          ],
+        ).createShader(rect),
+    );
+  }
+
+  void _fluffy(Canvas c) {
+    final id = spec.id;
+    final lumi = id == 'nova_lumi',
+        zeno = id == 'nova_zeno',
+        mira = id == 'nova_mira';
+    final fur = spec.c1, light = spec.c2, accent = spec.c3;
+    final dark = _shade(fur, -0.12);
+    final sway = calm ? 0.0 : math.sin(_tt * 2) * 0.05;
+
+    // Schwanz (Puschel)
+    final tailC = Offset(lumi ? -0.62 : 0.62, 0.62 + sway);
+    if (lumi) _glow(c, tailC, 0.4, accent, 0.35);
+    _fluffBlob(
+      c,
+      tailC,
+      0.22,
+      0.2,
+      lumi ? _shade(fur, 0.08) : dark,
+      tufts: 14,
+      tuft: 0.07,
+      seed: 1,
+    );
+
+    // Ohren / Mähne hinter dem Kopf
+    if (lumi) {
+      for (final sx in [-1.0, 1.0]) {
+        _glow(c, Offset(sx * 0.5, -0.78), 0.55, accent, 0.45);
+        final ear = Path()
+          ..moveTo(sx * 0.2, -0.45)
+          ..quadraticBezierTo(sx * 0.62, -0.62, sx * 0.78 + sway * sx, -1.02)
+          ..quadraticBezierTo(sx * 0.82, -0.6, sx * 0.72, -0.2)
+          ..close();
+        c.drawPath(ear, _f(_shade(fur, 0.04)));
+        final inner = Path()
+          ..moveTo(sx * 0.36, -0.46)
+          ..quadraticBezierTo(sx * 0.62, -0.62, sx * 0.72 + sway * sx, -0.92)
+          ..quadraticBezierTo(sx * 0.72, -0.55, sx * 0.62, -0.3)
+          ..close();
+        c.drawPath(inner, _f(accent.withValues(alpha: 0.75)));
+        c.drawPath(inner, _stroke(Colors.white.withValues(alpha: 0.5), 0.015));
+      }
+    } else if (zeno) {
+      // wuschelige Mähne
+      for (var i = 0; i < 9; i++) {
+        final a = math.pi + (i + 0.5) * math.pi / 9;
+        final base = Offset(math.cos(a) * 0.55, -0.22 + math.sin(a) * 0.5);
+        final tip = Offset(
+          math.cos(a) * (0.82 + (i.isEven ? 0.12 : 0)),
+          -0.22 + math.sin(a) * (0.78 + (i.isEven ? 0.12 : 0)),
+        );
+        final side = Offset(-math.sin(a), math.cos(a)) * 0.09;
+        c.drawPath(
+          Path()
+            ..moveTo(base.dx + side.dx, base.dy + side.dy)
+            ..lineTo(tip.dx, tip.dy)
+            ..lineTo(base.dx - side.dx, base.dy - side.dy)
+            ..close(),
+          _f(_shade(fur, i.isEven ? -0.1 : -0.04)),
+        );
+      }
+      for (final sx in [-1.0, 1.0]) {
+        final ear = Path()
+          ..moveTo(sx * 0.22, -0.55)
+          ..lineTo(sx * 0.58, -0.92)
+          ..lineTo(sx * 0.66, -0.35)
+          ..close();
+        c.drawPath(ear, _f(fur));
+        c.drawPath(
+          Path()
+            ..moveTo(sx * 0.32, -0.55)
+            ..lineTo(sx * 0.55, -0.8)
+            ..lineTo(sx * 0.58, -0.45)
+            ..close(),
+          _f(const Color(0xFFF4B6A0)),
+        );
+      }
+    } else if (mira) {
+      for (final sx in [-1.0, 1.0]) {
+        _glow(c, Offset(sx * 0.72, -0.2), 0.5, accent, 0.5);
+        _fluffBlob(
+          c,
+          Offset(sx * 0.7 + sway * sx * 0.3, -0.22),
+          0.2,
+          0.34,
+          _shade(fur, 0.05),
+          tufts: 14,
+          tuft: 0.07,
+          seed: sx,
+        );
+        _oval(c, sx * 0.7, -0.22, 0.1, 0.22, accent.withValues(alpha: 0.55));
+        // kleine Ohren oben
+        c.drawPath(
+          Path()
+            ..moveTo(sx * 0.18, -0.65)
+            ..lineTo(sx * 0.42, -0.95)
+            ..lineTo(sx * 0.5, -0.55)
+            ..close(),
+          _f(fur),
+        );
+      }
+    }
+
+    // Körper + Pfoten
+    _fluffBlob(
+      c,
+      const Offset(0, 0.55),
+      0.5,
+      0.38,
+      fur,
+      tufts: 20,
+      tuft: 0.08,
+      seed: 2,
+    );
+    _oval(c, 0, 0.62, 0.3, 0.26, light);
+    for (final sx in [-1.0, 1.0]) {
+      if (mira) _glow(c, Offset(sx * 0.26, 0.92), 0.26, accent, 0.7);
+      _fluffBlob(
+        c,
+        Offset(sx * 0.26, 0.9),
+        0.17,
+        0.1,
+        light,
+        tufts: 9,
+        tuft: 0.045,
+        seed: sx,
+      );
+      if (mira) {
+        _oval(c, sx * 0.26, 0.92, 0.07, 0.05, accent);
+        for (final d in [-0.07, 0.0, 0.07]) {
+          c.drawCircle(Offset(sx * 0.26 + d, 0.86), 0.025, _f(accent));
+        }
+      }
+    }
+
+    // Kopf
+    _fluffBlob(
+      c,
+      const Offset(0, -0.2),
+      0.62,
+      0.52,
+      fur,
+      tufts: 26,
+      tuft: 0.08,
+      seed: 3,
+    );
+    if (zeno) {
+      // Stirnschopf
+      for (var i = -2; i <= 2; i++) {
+        c.drawPath(
+          Path()
+            ..moveTo(i * 0.1 - 0.06, -0.62)
+            ..lineTo(
+              i * 0.1 + (i == 0 ? 0 : i * 0.03),
+              -0.86 + (i.abs() == 2 ? 0.08 : 0),
+            )
+            ..lineTo(i * 0.1 + 0.06, -0.62)
+            ..close(),
+          _f(_shade(fur, -0.08)),
+        );
+      }
+    }
+    // helle Gesichtsmaske
+    _fluffBlob(
+      c,
+      const Offset(0, -0.06),
+      0.42,
+      0.32,
+      light,
+      tufts: 18,
+      tuft: 0.06,
+      seed: 4,
+    );
+
+    // Augen: große Iris mit Glanzlichtern
+    final closed = _blinking || mood == Mood.sleepy;
+    for (final sx in [-1.0, 1.0]) {
+      final cx = sx * 0.27, cy = -0.2;
+      final wink = mira && sx > 0 && mood != Mood.happy && !closed;
+      if (mood == Mood.happy) {
+        c.drawPath(
+          Path()
+            ..moveTo(cx - 0.11, cy + 0.04)
+            ..quadraticBezierTo(cx, cy - 0.16, cx + 0.11, cy + 0.04),
+          _stroke(_ink, 0.04),
+        );
+      } else if (closed || wink) {
+        c.drawPath(
+          Path()
+            ..moveTo(cx - 0.11, cy)
+            ..quadraticBezierTo(cx, cy + 0.09, cx + 0.11, cy),
+          _stroke(_ink, 0.04),
+        );
+        if (wink) {
+          for (final d in [-0.07, 0.0, 0.07]) {
+            c.drawLine(
+              Offset(cx + d, cy + 0.02),
+              Offset(cx + d * 1.4, cy + 0.08),
+              _stroke(_ink, 0.015),
+            );
+          }
+        }
+      } else {
+        _oval(c, cx, cy, 0.125, 0.15, _ink);
+        _oval(c, cx, cy + 0.01, 0.1, 0.125, accent);
+        _oval(c, cx, cy + 0.015, 0.06, 0.08, _ink);
+        c.drawCircle(Offset(cx + 0.035, cy - 0.05), 0.032, _f(Colors.white));
+        c.drawCircle(
+          Offset(cx - 0.035, cy + 0.04),
+          0.016,
+          _f(Colors.white.withValues(alpha: 0.8)),
+        );
+      }
+    }
+    _cheeks(c, 0, 0.0, 0.4, 0.07);
+    // Näschen und Mund
+    _oval(c, 0, -0.02, 0.045, 0.03, const Color(0xFFE88A9A));
+    final mouth = Path()
+      ..moveTo(-0.1, 0.06)
+      ..quadraticBezierTo(-0.05, 0.12, 0, 0.06)
+      ..quadraticBezierTo(0.05, 0.12, 0.1, 0.06);
+    if (mood == Mood.happy) {
+      c.drawPath(
+        Path()
+          ..moveTo(-0.1, 0.05)
+          ..quadraticBezierTo(0, 0.2, 0.1, 0.05)
+          ..close(),
+        _f(const Color(0xFF8A2F3C)),
+      );
+    } else {
+      c.drawPath(mouth, _stroke(_ink, 0.02));
+    }
   }
 
   @override

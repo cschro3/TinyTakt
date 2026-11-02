@@ -2,6 +2,7 @@ import 'dart:ui';
 
 /// Kategorien der Figurenbibliothek.
 enum CharacterCategory {
+  nova('NOVA-Freunde', 'NOVA friends'),
   pets('Haustiere', 'Pets'),
   farm('Bauernhof', 'Farm'),
   jungle('Dschungel', 'Jungle'),
@@ -52,6 +53,7 @@ enum Archetype {
   cactus,
   ghost,
   ladybug,
+  fluffy,
 }
 
 enum EarType { none, round, pointy, long, floppy, tiny, huge }
@@ -1033,6 +1035,36 @@ final List<CharacterSpec> characters = [
     archetype: Archetype.ladybug,
     c1: const Color(0xFFE5574B),
     c2: const Color(0xFF2B2B33),
+  ),
+  CharacterSpec(
+    id: 'nova_lumi',
+    de: 'Lumi (der Ruhige)',
+    en: 'Lumi (the calm one)',
+    category: CharacterCategory.nova,
+    archetype: Archetype.fluffy,
+    c1: const Color(0xFF7FA3C9),
+    c2: const Color(0xFFE3EEF7),
+    c3: const Color(0xFF3F7BFF),
+  ),
+  CharacterSpec(
+    id: 'nova_zeno',
+    de: 'Zeno (der Neugierige)',
+    en: 'Zeno (the curious one)',
+    category: CharacterCategory.nova,
+    archetype: Archetype.fluffy,
+    c1: const Color(0xFFC48A55),
+    c2: const Color(0xFFF6E3C4),
+    c3: const Color(0xFFE8741E),
+  ),
+  CharacterSpec(
+    id: 'nova_mira',
+    de: 'Mira (die Lustige)',
+    en: 'Mira (the funny one)',
+    category: CharacterCategory.nova,
+    archetype: Archetype.fluffy,
+    c1: const Color(0xFFC79BE0),
+    c2: const Color(0xFFFCEFF6),
+    c3: const Color(0xFFB347FF),
   ),
 ];
 
