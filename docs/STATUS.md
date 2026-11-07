@@ -20,3 +20,6 @@
 7. Google-Play: ggf. 12 Tester × 14 Tage (Kontotyp prüfen); Families-/Data-safety-Formulare ausfüllen.
 8. Referenz-Screenshots des Auftraggebers lagen nicht vor.
 9. Keystore/Upload-Key fehlen (nie im Repo).
+
+## Nachtrag: Apple-Music-Baustein
+Dart/UI getestet (28 Tests). **Swift-Teil nicht kompiliert, nicht auf Gerät geprüft.** MusicKit im Developer-Portal aktivieren; Details `docs/APPLE_MUSIC.md`.

@@ -52,6 +52,10 @@ class PrivacyScreen extends StatelessWidget {
       'Der einmalige Pro-Kauf wird über Apple App Store bzw. Google Play abgewickelt. Zahlungsdaten erhalten wir nie. Zur Freischaltung speichert die App lediglich einen Nachweis (Produkt, Transaktionskennung, Zeitpunkt) lokal. Die Datenverarbeitung durch Apple/Google richtet sich nach deren Datenschutzbestimmungen.',
     ),
     (
+      'Apple Music (optional, nur iPhone/iPad)',
+      'Eltern können im Elternbereich freiwillig Apple Music verbinden und einen Titel als Timer-Musik wählen. Dafür fragt iOS nach Ihrer Erlaubnis. Suche und Wiedergabe laufen über Apple (MusicKit); es gelten die Datenschutzbestimmungen von Apple. TinyTakt speichert nur Titelname, Künstler und Titelkennung als lokale Auswahl auf diesem Gerät und erhält keine Hörverläufe oder Kontodaten. Kinder können nicht suchen; nicht jugendfreie Titel werden herausgefiltert. Ohne Verbindung bleibt Apple Music komplett aus.',
+    ),
+    (
       'Kinder',
       'Die App richtet sich an Kinder und ihre Eltern. Kinder können in der App nichts kaufen, keine externen Webseiten öffnen und keine Daten eingeben oder teilen. Bereiche für Erwachsene sind durch eine Elternsicherung geschützt. Die Elternsicherung ersetzt keine rechtlich erforderliche Einwilligung.',
     ),
@@ -85,6 +89,10 @@ class PrivacyScreen extends StatelessWidget {
     (
       'Purchases',
       'The one-time Pro purchase is handled by the Apple App Store or Google Play. We never receive payment data. To unlock Pro the app stores only a proof (product, transaction id, time) locally. Processing by Apple/Google is governed by their privacy policies.',
+    ),
+    (
+      'Apple Music (optional, iPhone/iPad only)',
+      'Parents can optionally connect Apple Music in the parents area and choose a song as timer music. iOS asks for your permission. Search and playback run through Apple (MusicKit); Apple’s privacy terms apply. TinyTakt only stores song name, artist and song id as a local selection on this device and receives no listening history or account data. Children cannot search; explicit songs are filtered out. Without a connection, Apple Music stays completely off.',
     ),
     (
       'Children',

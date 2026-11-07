@@ -17,3 +17,5 @@
 * **DSGVO/COPPA:** Es werden keine personenbezogenen Daten an den Anbieter übermittelt (Datenminimierung). In-App-Datenschutzinformation vorhanden (Platzhalter für Verantwortlichen). Datenschutzerklärung als **öffentliche URL** muss vor Einreichung gehostet werden (Platzhalter-Text in `store/`). Elternsicherung ersetzt keine Einwilligung.
 * **Verbraucherrecht:** Einmalkauf, kein Abo; Preis aus dem Store; Widerruf/Erstattung über Store-Prozesse. **Händlerangaben (Trader-Status/DSA), Impressum:** vom Anbieter auszufüllen (Platzhalter vorhanden).
 * **Google Exact Alarm:** `USE_EXACT_ALARM` Deklaration (Kernfunktion Timer) begründen.
+
+* **Apple Music (optional, iOS):** siehe `APPLE_MUSIC.md`. Offen: Kids-Category-Akzeptanz, App-Privacy-Angabe, `NSAppleMusicUsageDescription` (vorhanden), Datenschutzabschnitt (vorhanden, rechtlich prüfen).

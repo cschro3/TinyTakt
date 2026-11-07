@@ -4,6 +4,7 @@ import '../data/entitlement_repository.dart';
 import '../data/motif_repository.dart';
 import '../data/parental_gate.dart';
 import '../data/settings_repository.dart';
+import '../platform/apple_music_service.dart';
 import '../platform/audio_service.dart';
 import '../platform/purchase_service.dart';
 import 'timer_controller.dart';
@@ -18,6 +19,7 @@ class AppDeps {
     required this.timer,
     required this.motifs,
     required this.audio,
+    required this.appleMusic,
   });
 
   final SettingsRepository settings;
@@ -27,6 +29,7 @@ class AppDeps {
   final TimerController timer;
   final MotifRepository motifs;
   final AudioPort audio;
+  final AppleMusicPort appleMusic;
 
   bool get isPro => entitlements.isPro;
 

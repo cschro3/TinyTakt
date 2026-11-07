@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/deps.dart';
 import '../../domain/catalog.dart';
+import '../../platform/apple_music_service.dart';
 import '../painters/character_painter.dart';
 import '../painters/scene_painter.dart';
 import '../painters/picture_painters.dart';
@@ -384,6 +385,45 @@ class _Music extends StatelessWidget {
       builder: (context, _) => ListView(
         padding: const EdgeInsets.all(12),
         children: [
+          // Apple-Music-Titel, den die Eltern zuvor gewählt haben (Kinder können nicht suchen).
+          if (d.appleMusic.isSupported && d.settings.appleMusic != null)
+            Card(
+              child: ListTile(
+                minVerticalPadding: 14,
+                leading: const Icon(
+                  Icons.queue_music_rounded,
+                  size: 30,
+                  color: Brand.indigo,
+                ),
+                title: Text(
+                  d.settings.appleMusic!.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                  ),
+                ),
+                subtitle: Text(
+                  'Apple Music · ${d.settings.appleMusic!.artist}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: d.settings.profile.musicId == appleMusicSoundId
+                    ? const Icon(
+                        Icons.check_circle_rounded,
+                        color: Brand.indigo,
+                        size: 30,
+                      )
+                    : null,
+                onTap: () async {
+                  await d.settings.updateProfile(
+                    (p) => p.copyWith(musicId: appleMusicSoundId),
+                  );
+                  await d.timer.changeMusic();
+                },
+              ),
+            ),
           for (final s in tracks)
             Card(
               child: ListTile(

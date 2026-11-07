@@ -14,6 +14,7 @@ import 'package:tinytakt/data/stores.dart';
 import 'package:tinytakt/domain/catalog.dart';
 import 'package:tinytakt/domain/clock.dart';
 import 'package:tinytakt/domain/timer_engine.dart';
+import 'package:tinytakt/platform/apple_music_service.dart';
 import 'package:tinytakt/platform/audio_service.dart';
 import 'package:tinytakt/platform/notification_service.dart';
 import 'package:tinytakt/platform/purchase_service.dart';
@@ -86,6 +87,7 @@ class TestEnv {
     settings = SettingsRepository(prefs);
     clock = FakeClock();
     audio = SilentAudioService();
+    appleMusic = FakeAppleMusic();
     notes = NoopNotificationService();
     timer = TimerController(
       engine: TimerEngine(clock),
@@ -95,6 +97,7 @@ class TestEnv {
       notifications: notes,
       languageCode: () => 'de',
       isPro: () => entitlements.isPro,
+      appleMusic: appleMusic,
     );
     store = FakeStore();
     purchases = PurchaseService(store, entitlements);
@@ -111,6 +114,7 @@ class TestEnv {
       timer: timer,
       motifs: MotifRepository(),
       audio: audio,
+      appleMusic: appleMusic,
     );
     _pro = pro;
   }
@@ -122,6 +126,7 @@ class TestEnv {
   late final SettingsRepository settings;
   late final FakeClock clock;
   late final SilentAudioService audio;
+  late final FakeAppleMusic appleMusic;
   late final NoopNotificationService notes;
   late final TimerController timer;
   late final FakeStore store;

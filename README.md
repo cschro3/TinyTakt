@@ -28,4 +28,4 @@ Flutter 3.47.7 (stable), Dart 3.13. Android: minSdk laut Flutter, targetSdk 36. 
 | `docs/` | Architektur, Plattformgrenzen, Käufe, Compliance, Release, Marke, Status |
 | `store/` | Store-Texte (DE/EN), Screenshots, Feature Graphic |
 
-Weitere Dokumente: `docs/ARCHITECTURE.md`, `docs/PLATFORM_LIMITS.md`, `docs/PURCHASES.md`, `docs/COMPLIANCE.md`, `docs/DEPENDENCIES.md`, `docs/TESTING.md`, `docs/RELEASE.md`, `docs/BRAND.md`, `docs/ASSETS.md`.
+Weitere Dokumente: `docs/APPLE_MUSIC.md` (optionaler iOS-Baustein), `docs/ARCHITECTURE.md`, `docs/PLATFORM_LIMITS.md`, `docs/PURCHASES.md`, `docs/COMPLIANCE.md`, `docs/DEPENDENCIES.md`, `docs/TESTING.md`, `docs/RELEASE.md`, `docs/BRAND.md`, `docs/ASSETS.md`.

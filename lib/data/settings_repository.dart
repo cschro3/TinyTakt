@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../domain/catalog.dart';
+import '../platform/apple_music_service.dart';
 import 'stores.dart';
 
 /// Ein lokales, anonymes Profil (Spitzname statt echtem Namen).
@@ -125,6 +126,7 @@ class SettingsRepository extends ChangeNotifier {
   List<KidProfile> profiles = const [KidProfile(id: 'p1', nickname: 'Ich')];
   List<TimerTemplate> templates = const [];
   List<String> customMotifs = const [];
+  AppleMusicTrack? appleMusic;
 
   KidProfile get profile => profiles.firstWhere(
     (p) => p.id == activeProfileId,
@@ -164,6 +166,7 @@ class SettingsRepository extends ChangeNotifier {
               .whereType<TimerTemplate>()
               .toList() ??
           const [];
+      appleMusic = AppleMusicTrack.fromJson(m['appleMusic']);
       customMotifs =
           (m['customMotifs'] as List?)?.whereType<String>().toList() ??
           const [];
@@ -196,6 +199,7 @@ class SettingsRepository extends ChangeNotifier {
         'profiles': profiles.map((p) => p.toJson()).toList(),
         'templates': templates.map((t) => t.toJson()).toList(),
         'customMotifs': customMotifs,
+        'appleMusic': appleMusic?.toJson(),
       }),
     );
   }

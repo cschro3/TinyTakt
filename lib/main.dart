@@ -14,6 +14,7 @@ import 'data/settings_repository.dart';
 import 'data/stores.dart';
 import 'domain/clock.dart';
 import 'domain/timer_engine.dart';
+import 'platform/apple_music_service.dart';
 import 'platform/audio_service.dart';
 import 'platform/notification_service.dart';
 import 'platform/purchase_service.dart';
@@ -40,6 +41,7 @@ Future<void> main() async {
   final NotificationPort notifications = kIsWeb
       ? NoopNotificationService()
       : LocalNotificationService();
+  final appleMusic = MethodChannelAppleMusic();
   final timer = TimerController(
     engine: TimerEngine(SystemClock()),
     settings: settings,
@@ -48,6 +50,7 @@ Future<void> main() async {
     notifications: notifications,
     languageCode: () => PlatformDispatcher.instance.locale.languageCode,
     isPro: () => entitlements.isPro,
+    appleMusic: appleMusic,
     keepAwake: (on) {
       try {
         on ? WakelockPlus.enable() : WakelockPlus.disable();
@@ -78,6 +81,7 @@ Future<void> main() async {
     timer: timer,
     motifs: MotifRepository(),
     audio: audio,
+    appleMusic: appleMusic,
   );
   await timer.init();
   runApp(TinyTaktApp(deps: deps));

@@ -6,6 +6,8 @@ import '../../app/info.dart';
 import '../../data/parental_gate.dart';
 import '../../domain/catalog.dart';
 import '../theme.dart';
+import '../../platform/apple_music_service.dart';
+import 'apple_music_screen.dart';
 import 'legal_screen.dart';
 import 'pro_screen.dart';
 
@@ -145,6 +147,7 @@ class ParentScreen extends StatelessWidget {
                         : s.update((x) => x.alarmId = a.id),
                   ),
               ]),
+              _Section('Apple Music', [_AppleMusicTile()]),
               _Section(
                 context.tr('Kinderprofile (lokal)', 'Child profiles (local)'),
                 [
@@ -472,11 +475,16 @@ class _PinTile extends StatefulWidget {
 
 class _PinTileState extends State<_PinTile> {
   bool? _has;
+  bool _loaded = false;
 
   @override
-  void initState() {
-    super.initState();
-    _refresh();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Kontext darf nicht in initState gelesen werden.
+    if (!_loaded) {
+      _loaded = true;
+      _refresh();
+    }
   }
 
   Future<void> _refresh() async {
@@ -592,6 +600,185 @@ class _PinTileState extends State<_PinTile> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Optionale Apple-Music-Anbindung (iPhone/iPad). Anderswo nur ein Hinweis.
+class _AppleMusicTile extends StatefulWidget {
+  @override
+  State<_AppleMusicTile> createState() => _AppleMusicTileState();
+}
+
+class _AppleMusicTileState extends State<_AppleMusicTile> {
+  AppleMusicAuth? _auth;
+  bool _canPlay = false;
+  bool _busy = false;
+  bool _loaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loaded = true;
+      _refresh();
+    }
+  }
+
+  Future<void> _refresh() async {
+    final am = AppScope.of(context).appleMusic;
+    final a = await am.authorizationStatus();
+    final c = a == AppleMusicAuth.authorized ? await am.canPlay() : false;
+    if (mounted) {
+      setState(() {
+        _auth = a;
+        _canPlay = c;
+      });
+    }
+  }
+
+  Future<void> _connect() async {
+    setState(() => _busy = true);
+    try {
+      await AppScope.of(context).appleMusic.requestAuthorization();
+    } on AppleMusicException {
+      // Status wird unten neu gelesen.
+    }
+    await _refresh();
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = AppScope.of(context);
+    if (!d.appleMusic.isSupported) {
+      return ListTile(
+        leading: const Icon(Icons.music_note_rounded),
+        title: Text(
+          context.tr(
+            'Nur auf iPhone und iPad verfügbar',
+            'Only available on iPhone and iPad',
+          ),
+        ),
+        subtitle: Text(
+          context.tr(
+            'Dort kannst du Titel aus Apple Music als Timer-Musik wählen.',
+            'There you can pick songs from Apple Music as timer music.',
+          ),
+        ),
+      );
+    }
+    final a = _auth;
+    if (a == null) return const ListTile(title: LinearProgressIndicator());
+    final track = d.settings.appleMusic;
+    final using = d.settings.profile.musicId == appleMusicSoundId;
+    return Column(
+      children: [
+        if (a == AppleMusicAuth.notDetermined)
+          ListTile(
+            leading: const Icon(Icons.link_rounded),
+            title: Text(
+              context.tr('Mit Apple Music verbinden', 'Connect Apple Music'),
+            ),
+            subtitle: Text(
+              context.tr(
+                'Nur mit Erlaubnis der Eltern. Die Musik wird von Apple abgespielt; TinyTakt speichert nur Titelname und Kennung auf diesem Gerät.',
+                'Parents only. Music is played by Apple; TinyTakt stores only the song name and id on this device.',
+              ),
+            ),
+            trailing: _busy
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 3),
+                  )
+                : null,
+            onTap: _busy ? null : _connect,
+          ),
+        if (a == AppleMusicAuth.denied || a == AppleMusicAuth.restricted)
+          ListTile(
+            leading: const Icon(Icons.block_rounded),
+            title: Text(
+              context.tr('Zugriff nicht erlaubt', 'Access not allowed'),
+            ),
+            subtitle: Text(
+              context.tr(
+                'In den iOS-Einstellungen unter TinyTakt „Medien & Apple Music“ erlauben.',
+                'Allow “Media & Apple Music” for TinyTakt in the iOS settings.',
+              ),
+            ),
+          ),
+        if (a == AppleMusicAuth.authorized && !_canPlay)
+          ListTile(
+            leading: const Icon(Icons.info_outline_rounded),
+            title: Text(
+              context.tr(
+                'Kein aktives Apple-Music-Abo gefunden',
+                'No active Apple Music subscription found',
+              ),
+            ),
+            subtitle: Text(
+              context.tr(
+                'Für die Wiedergabe von Katalogtiteln ist ein Abo nötig.',
+                'A subscription is needed to play catalogue songs.',
+              ),
+            ),
+            trailing: IconButton(
+              tooltip: context.tr('Erneut prüfen', 'Check again'),
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _refresh,
+            ),
+          ),
+        if (a == AppleMusicAuth.authorized && _canPlay) ...[
+          ListTile(
+            leading: Icon(
+              using
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.radio_button_off_rounded,
+              color: Brand.indigo,
+            ),
+            title: Text(
+              track == null
+                  ? context.tr('Noch kein Titel gewählt', 'No song chosen yet')
+                  : track.title,
+            ),
+            subtitle: track == null ? null : Text(track.artist),
+            onTap: track == null
+                ? null
+                : () => d.settings.updateProfile(
+                    (p) => p.copyWith(musicId: appleMusicSoundId),
+                  ),
+            trailing: track == null
+                ? null
+                : IconButton(
+                    tooltip: context.tr('Titel entfernen', 'Remove song'),
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    onPressed: () async {
+                      await d.settings.update((s) => s.appleMusic = null);
+                      if (using)
+                        await d.settings.updateProfile(
+                          (p) => p.copyWith(musicId: 'music_calm'),
+                        );
+                    },
+                  ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.search_rounded),
+            title: Text(context.tr('Titel suchen', 'Search songs')),
+            subtitle: Text(
+              context.tr(
+                'Nicht jugendfreie Titel werden herausgefiltert.',
+                'Explicit songs are filtered out.',
+              ),
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const AppleMusicSearchScreen(),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

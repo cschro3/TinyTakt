@@ -24,7 +24,9 @@
 		<string>????</string>
 		<key>CFBundleVersion</key>
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
-		<key>ITSAppUsesNonExemptEncryption</key>
+		<key>NSAppleMusicUsageDescription</key>
+	<string>TinyTakt kann – nur mit Erlaubnis der Eltern – Titel aus Apple Music als Timer-Musik abspielen. / TinyTakt can play songs from Apple Music as timer music – with a parent’s permission only.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundleLocalizations</key>
 	<array>

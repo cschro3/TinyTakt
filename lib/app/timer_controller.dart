@@ -7,6 +7,7 @@ import '../data/stores.dart';
 import '../domain/catalog.dart';
 import '../domain/clock.dart';
 import '../domain/timer_engine.dart';
+import '../platform/apple_music_service.dart';
 import '../platform/audio_service.dart';
 import '../platform/notification_service.dart';
 
@@ -22,6 +23,7 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
     required this.languageCode,
     void Function(bool on)? keepAwake,
     this.isPro = _no,
+    this.appleMusic,
   }) : _keepAwake = keepAwake ?? ((_) {});
 
   static bool _no() => false;
@@ -30,6 +32,10 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
   final SettingsRepository settings;
   final KeyValueStore store;
   final AudioPort audio;
+  final AppleMusicPort? appleMusic;
+  bool _appleActive = false;
+  int _musicGen =
+      0; // verwirft Musikstarts, die durch Pause/Stopp überholt wurden
   final NotificationPort notifications;
   final String Function() languageCode;
   final bool Function() isPro;
@@ -150,6 +156,7 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
     _poll?.cancel();
     _keepAwake(false);
     await audio.fadeOutMusic();
+    await _pauseAppleMusic();
     await notifications.cancel();
     await _persist();
     notifyListeners();
@@ -186,6 +193,7 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
     _keepAwake(false);
     finishedWhileAway = false;
     await audio.stopAll();
+    await _pauseAppleMusic();
     await notifications.cancel();
     await _persist();
     notifyListeners();
@@ -195,6 +203,7 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
     engine.repeat = settings.repeat;
     if (isRunning) {
       await audio.setMusicVolume(settings.muted ? 0 : settings.musicVolume);
+      if (settings.muted || settings.calmMode) await _pauseAppleMusic();
     }
     notifyListeners();
   }
@@ -205,7 +214,46 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _startMusic() async {
     if (settings.muted || settings.calmMode) return;
+    final gen = ++_musicGen;
+    if (settings.profile.musicId == appleMusicSoundId) {
+      final track = settings.appleMusic;
+      final am = appleMusic;
+      if (track != null && am != null && am.isSupported) {
+        try {
+          if (await am.authorizationStatus() == AppleMusicAuth.authorized) {
+            if (gen != _musicGen || !isRunning)
+              return; // inzwischen pausiert/gestoppt
+            await audio.stopAll();
+            await am.play(track.id);
+            if (gen != _musicGen || !isRunning) {
+              await am.pause(); // Start wurde währenddessen überholt
+              return;
+            }
+            _appleActive = true;
+            return;
+          }
+        } on AppleMusicException {
+          // Abo fehlt/Wiedergabe nicht möglich: auf eingebaute Musik ausweichen.
+        }
+      }
+      if (gen != _musicGen || !isRunning) return;
+      await audio.playMusic(soundById('music_calm'), settings.musicVolume);
+      return;
+    }
+    await _pauseAppleMusic();
     await audio.playMusic(_music, settings.musicVolume);
+  }
+
+  /// Apple-Music-Wiedergabe anhalten (Pause, Stopp, Ende, Hintergrund, Stumm).
+  Future<void> _pauseAppleMusic() async {
+    _musicGen++;
+    if (!_appleActive) return;
+    _appleActive = false;
+    try {
+      await appleMusic?.pause();
+    } on AppleMusicException {
+      // ignorieren
+    }
   }
 
   Future<void> _scheduleNotification() async {
@@ -230,6 +278,7 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
     await _persist();
     if (!settings.muted) {
       await audio.fadeOutMusic();
+      await _pauseAppleMusic();
       await audio.playAlarm(_alarm, settings.alarmVolume);
       if (settings.speech) {
         await audio.speak(
@@ -262,6 +311,7 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
         // das Ende meldet die geplante Benachrichtigung.
         if (state != AppLifecycleState.inactive) {
           audio.stopAll();
+          _pauseAppleMusic();
           if (isRunning) _persist();
         }
     }
