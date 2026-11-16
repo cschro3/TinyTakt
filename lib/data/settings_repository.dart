@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../domain/catalog.dart';
+import '../domain/session_plan.dart';
 import '../platform/apple_music_service.dart';
 import 'stores.dart';
 
@@ -127,6 +128,7 @@ class SettingsRepository extends ChangeNotifier {
   List<TimerTemplate> templates = const [];
   List<String> customMotifs = const [];
   AppleMusicTrack? appleMusic;
+  SessionPlan? plan;
 
   KidProfile get profile => profiles.firstWhere(
     (p) => p.id == activeProfileId,
@@ -167,6 +169,7 @@ class SettingsRepository extends ChangeNotifier {
               .toList() ??
           const [];
       appleMusic = AppleMusicTrack.fromJson(m['appleMusic']);
+      plan = SessionPlan.tryFromJson(m['plan']);
       customMotifs =
           (m['customMotifs'] as List?)?.whereType<String>().toList() ??
           const [];
@@ -200,6 +203,7 @@ class SettingsRepository extends ChangeNotifier {
         'templates': templates.map((t) => t.toJson()).toList(),
         'customMotifs': customMotifs,
         'appleMusic': appleMusic?.toJson(),
+        'plan': plan?.toJson(),
       }),
     );
   }

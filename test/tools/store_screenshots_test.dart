@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinytakt/domain/catalog.dart';
+import 'package:tinytakt/domain/session_plan.dart';
 import 'package:tinytakt/presentation/screens/home_screen.dart';
 import 'package:tinytakt/presentation/screens/parent_screen.dart';
 import 'package:tinytakt/presentation/screens/picker_screen.dart';
@@ -106,6 +107,46 @@ void main() {
             await e.timer.setDuration(const Duration(minutes: 15));
             await e.timer.start();
             e.clock.advance(const Duration(minutes: 5));
+          },
+        );
+        await shot(
+          '8_plan',
+          const HomeScreen(),
+          loc: loc,
+          pro: true,
+          prep: (e) async {
+            await e.settings.updateProfile(
+              (p) => p.copyWith(
+                characterId: 'fox',
+                style: TimerStyle.circle,
+                backgroundId: 'forest',
+              ),
+            );
+            await e.timer.setPlan(
+              SessionPlan.rounds(focusMin: 15, pauseMin: 5, rounds: 3),
+            );
+            await e.timer.start();
+            e.clock.advance(const Duration(minutes: 9));
+          },
+        );
+        await shot(
+          '9_plan_break',
+          const HomeScreen(),
+          loc: loc,
+          pro: true,
+          prep: (e) async {
+            await e.settings.updateProfile(
+              (p) => p.copyWith(
+                characterId: 'panda',
+                style: TimerStyle.circle,
+                backgroundId: 'meadow',
+              ),
+            );
+            await e.timer.setPlan(
+              SessionPlan.rounds(focusMin: 15, pauseMin: 5, rounds: 3),
+            );
+            await e.timer.start();
+            e.clock.advance(const Duration(minutes: 17));
           },
         );
         await shot('5_characters', const PickerScreen(), loc: loc);

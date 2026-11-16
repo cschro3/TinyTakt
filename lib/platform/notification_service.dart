@@ -18,6 +18,16 @@ abstract class NotificationPort {
     required String title,
     required String body,
   });
+
+  /// Plant eine zusätzliche Benachrichtigung unter [id] (z. B. Phasenwechsel im Lern-/Spielplan).
+  Future<void> scheduleAt({
+    required int id,
+    required int endWallMs,
+    required String title,
+    required String body,
+  });
+
+  /// Storniert alle geplanten Timer-Benachrichtigungen.
   Future<void> cancel();
 }
 
@@ -31,6 +41,7 @@ class LocalNotificationService implements NotificationPort {
     : _p = plugin ?? FlutterLocalNotificationsPlugin();
   final FlutterLocalNotificationsPlugin _p;
   static const _id = 4711;
+  final Set<int> _ids = {};
   static const _channelId = 'timer_end';
   bool _inited = false;
 
@@ -98,9 +109,18 @@ class LocalNotificationService implements NotificationPort {
     required int endWallMs,
     required String title,
     required String body,
+  }) => scheduleAt(id: _id, endWallMs: endWallMs, title: title, body: body);
+
+  @override
+  Future<void> scheduleAt({
+    required int id,
+    required int endWallMs,
+    required String title,
+    required String body,
   }) async {
     await init();
     if (endWallMs <= DateTime.now().toUtc().millisecondsSinceEpoch) return;
+    _ids.add(id);
     var mode = AndroidScheduleMode.inexactAllowWhileIdle;
     if (Platform.isAndroid) {
       final a = _p
@@ -111,7 +131,7 @@ class LocalNotificationService implements NotificationPort {
         mode = AndroidScheduleMode.exactAllowWhileIdle;
     }
     await _p.zonedSchedule(
-      id: _id,
+      id: id,
       scheduledDate: tz.TZDateTime.fromMillisecondsSinceEpoch(
         tz.UTC,
         endWallMs,
@@ -140,14 +160,27 @@ class LocalNotificationService implements NotificationPort {
   @override
   Future<void> cancel() async {
     await init();
-    await _p.cancel(id: _id);
+    final ids = {..._ids, _id};
+    _ids.clear();
+    for (final id in ids) {
+      await _p.cancel(id: id);
+    }
   }
 }
 
 class NoopNotificationService implements NotificationPort {
   final List<String> log = [];
-  int? scheduledEndMs;
+
+  /// Geplante Benachrichtigungen (id → Zeitpunkt UTC-ms) mit Titel.
+  final Map<int, int> scheduled = {};
+  final Map<int, String> titles = {};
   bool granted = true;
+
+  /// Spätester geplanter Zeitpunkt (= Timer-Ende), null wenn nichts geplant.
+  int? get scheduledEndMs => scheduled.isEmpty
+      ? null
+      : scheduled.values.reduce((a, b) => a > b ? a : b);
+
   @override
   Future<void> init() async {}
   @override
@@ -159,14 +192,24 @@ class NoopNotificationService implements NotificationPort {
     required int endWallMs,
     required String title,
     required String body,
+  }) => scheduleAt(id: 4711, endWallMs: endWallMs, title: title, body: body);
+
+  @override
+  Future<void> scheduleAt({
+    required int id,
+    required int endWallMs,
+    required String title,
+    required String body,
   }) async {
-    scheduledEndMs = endWallMs;
+    scheduled[id] = endWallMs;
+    titles[id] = title;
     log.add('schedule');
   }
 
   @override
   Future<void> cancel() async {
-    scheduledEndMs = null;
+    scheduled.clear();
+    titles.clear();
     log.add('cancel');
   }
 }

@@ -6,6 +6,7 @@ import '../data/settings_repository.dart';
 import '../data/stores.dart';
 import '../domain/catalog.dart';
 import '../domain/clock.dart';
+import '../domain/session_plan.dart';
 import '../domain/timer_engine.dart';
 import '../platform/apple_music_service.dart';
 import '../platform/audio_service.dart';
@@ -47,6 +48,7 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
   int? countdown; // 3,2,1 vor dem Start
   Timer? _countdownTimer;
   bool _disposed = false;
+  int? _lastStep; // Phase im Lern-/Spielplan, für Phasenwechsel-Erkennung
 
   /// Wird gesetzt, wenn der Timer ablief, während die App nicht lief.
   bool finishedWhileAway = false;
@@ -54,6 +56,38 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
   TimerStatus get status => engine.status;
   bool get isCountingDown => countdown != null;
   bool get isRunning => engine.status == TimerStatus.running;
+
+  /// Aktiver Lern-/Spielplan (nur wenn er zur Engine-Dauer passt).
+  SessionPlan? get plan {
+    final p = settings.plan;
+    return (p != null && p.totalMs == engine.totalMs) ? p : null;
+  }
+
+  /// Position im Plan bzw. null ohne Plan.
+  PlanView? get planView {
+    final p = plan;
+    if (p == null) return null;
+    final elapsed = engine.status == TimerStatus.finished
+        ? p.totalMs
+        : engine.totalMs - engine.remainingMs;
+    return p.viewAt(elapsed);
+  }
+
+  /// Anteil der aktuellen Phase (bzw. der ganzen Zeit ohne Plan), 1 → 0.
+  double get displayFraction {
+    if (engine.status == TimerStatus.finished) return 0;
+    final v = planView;
+    return v == null ? engine.fractionRemaining : v.stepFraction;
+  }
+
+  /// Angezeigte Sekunden der aktuellen Phase (bzw. der ganzen Zeit ohne Plan).
+  int get displaySeconds {
+    if (engine.status == TimerStatus.finished) return 0;
+    final v = planView;
+    return v == null
+        ? engine.displaySeconds
+        : (v.stepRemainingMs + 999) ~/ 1000;
+  }
 
   SoundSpec get _music {
     final s = soundById(settings.profile.musicId);
@@ -67,10 +101,11 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> init() async {
     WidgetsBinding.instance.addObserver(this);
-    engine.repeat = settings.repeat;
     final snap = TimerSnapshot.tryDecode(store.getString(snapshotKey));
     if (snap != null) {
       final expired = engine.restore(snap);
+      engine.repeat = settings.repeat && plan == null;
+      _lastStep = planView?.index;
       if (expired) {
         finishedWhileAway = true;
         await _persist();
@@ -81,8 +116,14 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
         await _scheduleNotification();
       }
     } else {
-      engine.setDuration(Duration(seconds: settings.lastSeconds));
+      final p = settings.plan;
+      engine.setDuration(
+        p != null
+            ? Duration(milliseconds: p.totalMs)
+            : Duration(seconds: settings.lastSeconds),
+      );
     }
+    engine.repeat = settings.repeat && plan == null;
     notifyListeners();
   }
 
@@ -94,7 +135,58 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
   void _tick() {
     if (engine.tick()) {
       _onFinished();
+    } else {
+      _checkStepChange();
     }
+    notifyListeners();
+  }
+
+  /// Phasenwechsel im Lern-/Spielplan: sanfter Ton, Musik passend zur Phase.
+  void _checkStepChange() {
+    final v = planView;
+    if (v == null || !isRunning) return;
+    final last = _lastStep;
+    _lastStep = v.index;
+    if (last == null || last == v.index) return;
+    _onStepChanged(v);
+  }
+
+  Future<void> _onStepChanged(PlanView v) async {
+    if (settings.muted) return;
+    await audio.playAlarm(_alarm, settings.alarmVolume * 0.8);
+    if (settings.speech) {
+      final de = languageCode() == 'de';
+      await audio.speak(
+        v.isPause
+            ? (de ? 'Pause! Ruh dich aus.' : 'Break time! Rest a little.')
+            : (de ? 'Weiter geht’s!' : 'Let’s go on!'),
+        languageCode(),
+      );
+    }
+    if (v.isPause) {
+      await audio.fadeOutMusic();
+      await _pauseAppleMusic();
+    } else {
+      await _startMusic();
+    }
+  }
+
+  /// Lern-/Spielplan setzen (nur im Leerlauf) oder mit `null` entfernen.
+  Future<void> setPlan(SessionPlan? p) async {
+    if (isRunning || engine.status == TimerStatus.paused || isCountingDown)
+      return;
+    if (p != null && !p.isValid) return;
+    settings.plan = p;
+    engine.setDuration(
+      p != null
+          ? Duration(milliseconds: p.totalMs)
+          : Duration(seconds: settings.lastSeconds),
+    );
+    engine.repeat = settings.repeat && plan == null;
+    finishedWhileAway = false;
+    _lastStep = null;
+    await settings.update((_) {});
+    await _persist();
     notifyListeners();
   }
 
@@ -106,7 +198,11 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     engine.setDuration(d);
     finishedWhileAway = false;
-    await settings.update((s) => s.lastSeconds = d.inSeconds);
+    _lastStep = null;
+    await settings.update((s) {
+      s.lastSeconds = d.inSeconds;
+      s.plan = null; // eine Einzelzeit ersetzt den Plan
+    });
     await _persist();
     notifyListeners();
   }
@@ -140,8 +236,9 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _begin() async {
-    engine.repeat = settings.repeat;
+    engine.repeat = settings.repeat && plan == null;
     engine.start();
+    _lastStep = planView?.index;
     _startPolling();
     _keepAwake(settings.keepScreenOn);
     await _persist();
@@ -165,6 +262,7 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> resume() async {
     if (engine.status != TimerStatus.paused) return;
     engine.resume();
+    _lastStep = planView?.index;
     _startPolling();
     _keepAwake(settings.keepScreenOn);
     _startMusic();
@@ -200,7 +298,7 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> applySettings() async {
-    engine.repeat = settings.repeat;
+    engine.repeat = settings.repeat && plan == null;
     if (isRunning) {
       await audio.setMusicVolume(settings.muted ? 0 : settings.musicVolume);
       if (settings.muted || settings.calmMode) await _pauseAppleMusic();
@@ -214,6 +312,7 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _startMusic() async {
     if (settings.muted || settings.calmMode) return;
+    if (planView?.isPause ?? false) return; // Pausenphase: Ruhe
     final gen = ++_musicGen;
     if (settings.profile.musicId == appleMusicSoundId) {
       final track = settings.appleMusic;
@@ -260,6 +359,29 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
     final end = engine.endWallMs;
     if (end == null) return;
     final de = languageCode() == 'de';
+    final p = plan;
+    if (p != null) {
+      // Jede noch kommende Phasengrenze bekommt eine eigene Benachrichtigung.
+      final b = p.boundariesMs;
+      final elapsed = engine.totalMs - engine.remainingMs;
+      for (var i = 0; i < b.length - 1; i++) {
+        if (b[i] <= elapsed) continue;
+        final next = p.steps[i + 1];
+        final isPause = next.kind == StepKind.pause;
+        await notifications.scheduleAt(
+          id: 4711 + 1 + i,
+          endWallMs: end - (engine.totalMs - b[i]),
+          title: isPause
+              ? (de ? 'Zeit für eine Pause!' : 'Time for a break!')
+              : (de ? 'Weiter geht’s!' : 'Let’s go on!'),
+          body: isPause
+              ? (de
+                    ? 'Gut gemacht – ruh dich kurz aus.'
+                    : 'Well done – rest for a moment.')
+              : (de ? 'Die Pause ist vorbei.' : 'The break is over.'),
+        );
+      }
+    }
     await notifications.scheduleEnd(
       endWallMs: end,
       title: de ? 'Die Zeit ist um!' : 'Time is up!',

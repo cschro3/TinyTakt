@@ -23,3 +23,6 @@
 
 ## Nachtrag: Apple-Music-Baustein
 Dart/UI getestet (28 Tests). **Swift-Teil nicht kompiliert, nicht auf Gerät geprüft.** MusicKit im Developer-Portal aktivieren; Details `docs/APPLE_MUSIC.md`.
+
+## Nachtrag: Premium-Optik und Lern-/Spielzeit
+Figuren mit Verläufen/Glanz/Fell-Details, 7 neue Figuren (81 gesamt); Plan-Modus „Lernen & Pausen“ (Domain `SessionPlan`, Steuerung im `TimerController`, UI im Zeit-Dialog und auf dem Hauptbildschirm). Tests: siehe letzter `flutter test`-Lauf. Hintergrund-Benachrichtigungen je Phasengrenze nur auf Geräten prüfbar.

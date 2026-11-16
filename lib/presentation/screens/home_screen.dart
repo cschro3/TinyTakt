@@ -3,6 +3,7 @@ import 'package:flutter/scheduler.dart';
 
 import '../../app/deps.dart';
 import '../../domain/catalog.dart';
+import '../../domain/session_plan.dart';
 import '../../domain/timer_engine.dart';
 import '../painters/character_painter.dart';
 import '../painters/scene_painter.dart';
@@ -110,6 +111,8 @@ class _HomeScreenState extends State<HomeScreen>
                         motif: motif,
                         calm: calm,
                         countdown: timer.countdown,
+                        fraction: () => timer.displayFraction,
+                        breakPhase: timer.planView?.isPause ?? false,
                       ),
                     );
                     final controls = _Controls(locked: locked);
@@ -343,12 +346,33 @@ class _Controls extends StatelessWidget {
     final e = timer.engine;
     final status = e.status;
     final de = context.isDe;
-    final label = switch (status) {
-      TimerStatus.idle => context.tr('Bereit', 'Ready'),
-      TimerStatus.running => context.tr('Noch', 'Left'),
-      TimerStatus.paused => context.tr('Pause', 'Paused'),
-      TimerStatus.finished => context.tr('Geschafft!', 'All done!'),
-    };
+    final pv = timer.planView;
+    final String label;
+    if (pv != null &&
+        status != TimerStatus.finished &&
+        status != TimerStatus.idle) {
+      final phase = pv.isPause
+          ? context.tr('Pause', 'Break')
+          : context.tr(
+              'Runde ${pv.round} von ${pv.rounds}',
+              'Round ${pv.round} of ${pv.rounds}',
+            );
+      label = status == TimerStatus.paused
+          ? context.tr('Angehalten · $phase', 'Paused · $phase')
+          : phase;
+    } else if (pv != null && status == TimerStatus.idle) {
+      label = context.tr(
+        'Lernen & Pausen · ${pv.rounds} Runden',
+        'Study & breaks · ${pv.rounds} rounds',
+      );
+    } else {
+      label = switch (status) {
+        TimerStatus.idle => context.tr('Bereit', 'Ready'),
+        TimerStatus.running => context.tr('Noch', 'Left'),
+        TimerStatus.paused => context.tr('Pause', 'Paused'),
+        TimerStatus.finished => context.tr('Geschafft!', 'All done!'),
+      };
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -357,7 +381,7 @@ class _Controls extends StatelessWidget {
           // Zeitanzeige – große Ziffern auf heller Fläche (Kontrast), zusätzlich gesprochene Beschreibung
           Builder(
             builder: (context) {
-              final s = e.status == TimerStatus.finished ? 0 : e.displaySeconds;
+              final s = timer.displaySeconds;
               return Semantics(
                 label: '$label ${spokenDuration(s, de)}',
                 excludeSemantics: true,
@@ -406,6 +430,10 @@ class _Controls extends StatelessWidget {
               );
             },
           ),
+          if (pv != null) ...[
+            const SizedBox(height: 10),
+            _PlanBar(view: pv, plan: timer.plan!, status: status),
+          ],
           const SizedBox(height: 16),
           if (status == TimerStatus.finished)
             _finishedButtons(context, d)
@@ -413,7 +441,7 @@ class _Controls extends StatelessWidget {
             _runButtons(context, d, locked),
           if (status == TimerStatus.idle && !locked) ...[
             const SizedBox(height: 14),
-            _QuickPicks(),
+            if (pv == null) _QuickPicks() else _PlanChip(),
           ],
         ],
       ),
@@ -604,6 +632,138 @@ class _QuickPicks extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Plan-Übersicht: ein Segment je Phase. Breite = Dauer; Arbeit = Balken, Pause = Kreis.
+/// Fertig = gefüllt, laufend = teilweise gefüllt mit Rahmen, offen = leer (Zustand auch ohne Farbe lesbar).
+class _PlanBar extends StatelessWidget {
+  const _PlanBar({
+    required this.view,
+    required this.plan,
+    required this.status,
+  });
+  final PlanView view;
+  final SessionPlan plan;
+  final TimerStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = plan.totalMs;
+    return Semantics(
+      label: context.tr(
+        'Plan: Runde ${view.round} von ${view.rounds}, ${view.isPause ? 'Pause läuft' : 'Arbeitsphase läuft'}',
+        'Plan: round ${view.round} of ${view.rounds}, ${view.isPause ? 'break running' : 'work phase running'}',
+      ),
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        // Breite folgt den Phasendauern; bei vielen Runden wird die Leiste verkleinert statt abgeschnitten.
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < plan.steps.length; i++) ...[
+                _segment(
+                  i,
+                  plan.steps[i],
+                  (240.0 * plan.steps[i].ms / total).clamp(
+                    plan.steps[i].kind == StepKind.pause ? 14.0 : 22.0,
+                    120.0,
+                  ),
+                ),
+                if (i < plan.steps.length - 1) const SizedBox(width: 4),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _segment(int i, PlanStep s, double w) {
+    final done = status == TimerStatus.finished || i < view.index;
+    final current =
+        i == view.index &&
+        status != TimerStatus.finished &&
+        status != TimerStatus.idle;
+    final fill = done ? 1.0 : (current ? 1 - view.stepFraction : 0.0);
+    final color = s.kind == StepKind.pause
+        ? const Color(0xFF5BA8F0)
+        : Brand.mint;
+    final shape = s.kind == StepKind.pause
+        ? BoxShape.circle
+        : BoxShape.rectangle;
+    final size = s.kind == StepKind.pause ? 14.0 : 14.0;
+    return Container(
+      width: s.kind == StepKind.pause ? size : w,
+      height: size,
+      decoration: BoxDecoration(
+        shape: shape,
+        borderRadius: shape == BoxShape.circle
+            ? null
+            : BorderRadius.circular(7),
+        border: Border.all(
+          color: current ? Brand.indigo : const Color(0xFFB8B2CC),
+          width: current ? 2.5 : 1.5,
+        ),
+        color: const Color(0xFFF1EEF8),
+      ),
+      clipBehavior: Clip.antiAlias,
+      alignment: Alignment.centerLeft,
+      child: FractionallySizedBox(
+        widthFactor: fill,
+        heightFactor: 1,
+        child: ColoredBox(color: color),
+      ),
+    );
+  }
+}
+
+/// Zeigt im Leerlauf den aktiven Plan und erlaubt, ihn zu entfernen.
+class _PlanChip extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final d = AppScope.of(context);
+    final p = d.timer.plan!;
+    final focus =
+        p.steps.firstWhere((s) => s.kind == StepKind.focus).ms ~/ 60000;
+    final pauses = p.steps.where((s) => s.kind == StepKind.pause).toList();
+    final pause = pauses.isEmpty ? 0 : pauses.first.ms ~/ 60000;
+    return Material(
+      color: Colors.white.withValues(alpha: 0.92),
+      borderRadius: BorderRadius.circular(24),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 16, right: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                context.tr(
+                  '${p.rounds} × $focus Min.${pause > 0 ? ' · Pause $pause Min.' : ''}',
+                  '${p.rounds} × $focus min${pause > 0 ? ' · break $pause min' : ''}',
+                ),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: context.tr('Plan entfernen', 'Remove plan'),
+              icon: const Icon(Icons.close_rounded),
+              onPressed: () => d.timer.setPlan(null),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -13,3 +13,8 @@
 * Alarmton im Hintergrund = Benachrichtigungston des Systems (Standardton), nicht die App-Alarmmelodie. Die Melodie spielt nur bei geöffneter App.
 * Audio: keine Hintergrund-Audio-Fähigkeit (kein `UIBackgroundModes audio`, kein Foreground-Service). Musik stoppt beim Verlassen der App. iOS-Kategorie `ambient` (respektiert Stumm-Schalter, mischt mit anderen), Android Audiofokus mit Ducking. Telefonanrufe: Audiofokus/Unterbrechungen werden vom Audio-Plugin gemäß Plattform behandelt – **nur auf Geräten prüfbar**.
 * Loop-Nahtlosigkeit der AAC-Musik ist nicht garantiert (Encoder-Priming; evtl. winziger Spalt).
+
+## Lern-/Spielzeit (Plan mit Phasen)
+* Gesamtzeit = Summe aller Phasen und läuft in derselben `TimerEngine` (Pause, Hintergrund, Neustart, Uhr-Änderungen verhalten sich wie beim Einzeltimer). Die aktuelle Phase wird aus der verstrichenen Gesamtzeit berechnet.
+* Für **jede** kommende Phasengrenze plant die App eine eigene lokale Benachrichtigung („Zeit für eine Pause!“, „Weiter geht’s!“) plus die End-Benachrichtigung (bis zu 24 Phasen). Es gelten dieselben Einschränkungen wie oben: keine garantierte, keine sekundengenaue Zustellung; bei geschlossener App ändert sich die Anzeige erst beim nächsten Öffnen, rechnerisch stimmt sie dann sofort.
+* Phasenwechsel bei geöffneter App: sanfter Alarmton (optional Sprachansage), Musik schweigt in der Pause und startet danach neu.

@@ -13,6 +13,7 @@ enum CharacterCategory {
   vehicles('Fahrzeuge', 'Vehicles'),
   space('Weltraum', 'Space'),
   nature('Natur', 'Nature'),
+  bugs('Krabbeltiere', 'Little critters'),
   seasonal('Jahreszeiten', 'Seasons');
 
   const CharacterCategory(this.de, this.en);
@@ -54,6 +55,10 @@ enum Archetype {
   ghost,
   ladybug,
   fluffy,
+  frog,
+  bee,
+  butterfly,
+  snail,
 }
 
 enum EarType { none, round, pointy, long, floppy, tiny, huge }
@@ -82,6 +87,9 @@ class CritterStyle {
     this.eyePatch = false,
     this.bigNose = false,
     this.antlers = false,
+    this.bigTail = false,
+    this.spikes = false,
+    this.wideMuzzle = false,
   });
   final Color? earColor;
   final Color body, belly, accent, patternColor, maneColor;
@@ -96,7 +104,10 @@ class CritterStyle {
       whiskers,
       eyePatch,
       bigNose,
-      antlers;
+      antlers,
+      bigTail,
+      spikes,
+      wideMuzzle;
 }
 
 class CharacterSpec {
@@ -1031,7 +1042,7 @@ final List<CharacterSpec> characters = [
     id: 'ladybug',
     de: 'Marienkäfer Mia',
     en: 'Mia the Ladybug',
-    category: CharacterCategory.seasonal,
+    category: CharacterCategory.bugs,
     archetype: Archetype.ladybug,
     c1: const Color(0xFFE5574B),
     c2: const Color(0xFF2B2B33),
@@ -1065,6 +1076,98 @@ final List<CharacterSpec> characters = [
     c1: const Color(0xFFC79BE0),
     c2: const Color(0xFFFCEFF6),
     c3: const Color(0xFFB347FF),
+  ),
+  CharacterSpec(
+    id: 'squirrel',
+    de: 'Eichhörnchen Nuss',
+    en: 'Nutty the Squirrel',
+    category: CharacterCategory.forest,
+    archetype: Archetype.critter,
+    c1: const Color(0xFFD2692B),
+    c2: const Color(0xFFFFF0DC),
+    critter: const CritterStyle(
+      body: Color(0xFFD2692B),
+      belly: Color(0xFFFFF0DC),
+      accent: Color(0xFF8A3F16),
+      ear: EarType.pointy,
+      snout: Snout.muzzle,
+      bigTail: true,
+      whiskers: true,
+    ),
+  ),
+  CharacterSpec(
+    id: 'hedgehog',
+    de: 'Igel Stups',
+    en: 'Stups the Hedgehog',
+    category: CharacterCategory.forest,
+    archetype: Archetype.critter,
+    c1: const Color(0xFFC49A6C),
+    c2: const Color(0xFFF6E3C8),
+    critter: const CritterStyle(
+      body: Color(0xFFC49A6C),
+      belly: Color(0xFFF6E3C8),
+      accent: Color(0xFF6B4A2B),
+      ear: EarType.round,
+      snout: Snout.muzzle,
+      spikes: true,
+    ),
+  ),
+  CharacterSpec(
+    id: 'hippo',
+    de: 'Nilpferd Hoppla',
+    en: 'Hoppla the Hippo',
+    category: CharacterCategory.jungle,
+    archetype: Archetype.critter,
+    c1: const Color(0xFF9C8FC4),
+    c2: const Color(0xFFD9D0F0),
+    critter: const CritterStyle(
+      body: Color(0xFF9C8FC4),
+      belly: Color(0xFFD9D0F0),
+      accent: Color(0xFF6F5FA0),
+      ear: EarType.tiny,
+      snout: Snout.muzzle,
+      wideMuzzle: true,
+    ),
+  ),
+  CharacterSpec(
+    id: 'frog',
+    de: 'Frosch Quaxi',
+    en: 'Quaxi the Frog',
+    category: CharacterCategory.forest,
+    archetype: Archetype.frog,
+    c1: const Color(0xFF5DBB4A),
+    c2: const Color(0xFFD8F0A8),
+    c3: const Color(0xFFE5574B),
+  ),
+  CharacterSpec(
+    id: 'bee',
+    de: 'Biene Summsi',
+    en: 'Summsi the Bee',
+    category: CharacterCategory.bugs,
+    archetype: Archetype.bee,
+    c1: const Color(0xFFFFC83D),
+    c2: const Color(0xFF2B2B33),
+    c3: const Color(0xFFBFE3F5),
+  ),
+  CharacterSpec(
+    id: 'butterfly',
+    de: 'Schmetterling Flatter',
+    en: 'Flutter the Butterfly',
+    category: CharacterCategory.bugs,
+    archetype: Archetype.butterfly,
+    c1: const Color(0xFFB57BE0),
+    c2: const Color(0xFFFFC83D),
+    c3: const Color(0xFF6EC1F5),
+  ),
+  CharacterSpec(
+    id: 'snail',
+    de: 'Schnecke Schlonz',
+    en: 'Slowly the Snail',
+    category: CharacterCategory.bugs,
+    archetype: Archetype.snail,
+    c1: const Color(0xFFF2C08A),
+    c2: const Color(0xFFE08A4C),
+    c3: const Color(0xFF8A5A2B),
   ),
 ];
 

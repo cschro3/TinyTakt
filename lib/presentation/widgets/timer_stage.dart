@@ -28,12 +28,20 @@ class TimerStage extends StatefulWidget {
     required this.motif,
     required this.calm,
     this.countdown,
+    this.fraction,
+    this.breakPhase = false,
   });
   final TimerEngine engine;
   final TimerStyle style;
   final Motif motif;
   final bool calm;
   final int? countdown;
+
+  /// Anteil der aktuellen Phase (1 → 0); ohne Angabe der Restanteil der Engine.
+  final double Function()? fraction;
+
+  /// Pausenphase im Lern-/Spielplan: ruhige Figur, blauer Ring.
+  final bool breakPhase;
 
   @override
   State<TimerStage> createState() => _TimerStageState();
@@ -66,7 +74,7 @@ class _TimerStageState extends State<TimerStage>
     if (widget.countdown != null) return Mood.happy;
     switch (widget.engine.status) {
       case TimerStatus.running:
-        return Mood.active;
+        return widget.breakPhase ? Mood.idle : Mood.active;
       case TimerStatus.paused:
         return Mood.sleepy;
       case TimerStatus.finished:
@@ -132,7 +140,7 @@ class _TimerStageState extends State<TimerStage>
                 final e = widget.engine;
                 final frac = e.status == TimerStatus.finished
                     ? 0.0
-                    : e.fractionRemaining;
+                    : (widget.fraction?.call() ?? e.fractionRemaining);
                 final calm = widget.calm;
                 final size = Size(side, side);
                 final ring = _ringColor(frac);
@@ -275,6 +283,8 @@ class _TimerStageState extends State<TimerStage>
 
   /// Farbe des Fortschritts (nur unterstützend; Zeit steht zusätzlich als Zahl und Form da).
   Color _ringColor(double frac) {
+    if (widget.breakPhase)
+      return const Color(0xFF5BA8F0); // Pause: ruhiges Blau
     if (frac > 0.5) return const Color(0xFF2FC4A8);
     if (frac > 0.2) return const Color(0xFFFFB02E);
     return const Color(0xFFFF7A59);
