@@ -50,94 +50,177 @@ class PicturePainter extends CustomPainter {
     canvas.restore();
   }
 
-  // ---- Eis schmilzt: drei Kugeln, die oberste schmilzt zuerst ----
+  // ---- Eis schmilzt: drei Kugeln mit Tropfenrand, die oberste schmilzt zuerst ----
   void _ice(Canvas c) {
     final f = _f01;
     c.save();
-    c.translate(7.5, 14);
-    c.scale(0.85);
-    final puddleW = 14 + (1 - f) * 34;
+    c.translate(7, 14); // Platz für die volle Kugelsäule samt Kirsche
+    c.scale(0.86);
+    const cols = [
+      (Color(0xFFFFB6CB), Color(0xFFE8789A)), // Erdbeere
+      (Color(0xFFFFF3C4), Color(0xFFEFCB74)), // Vanille
+      (Color(0xFFB07A52), Color(0xFF6E4326)), // Schoko
+    ];
+    // Pfütze wächst mit der geschmolzenen Menge
+    final melted = 1 - f;
+    final pw = 12 + melted * 36;
+    final puddle = Rect.fromCenter(
+      center: const Offset(50, 94),
+      width: pw * 2,
+      height: 6 + melted * 5,
+    );
+    c.drawOval(puddle.shift(const Offset(0, 1.5)), _f(const Color(0x22000000)));
+    c.drawOval(
+      puddle,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFFFFC4D6), Color(0xFFF08AAB)],
+        ).createShader(puddle),
+    );
     c.drawOval(
       Rect.fromCenter(
-        center: const Offset(50, 93),
-        width: puddleW * 2,
-        height: 7,
+        center: puddle.center.translate(-pw * 0.35, -1),
+        width: pw * 0.7,
+        height: puddle.height * 0.25,
       ),
-      _f(const Color(0xFFF4A6C0)),
+      _f(Colors.white.withValues(alpha: 0.5)),
     );
-    // Waffel
+    // Waffel mit Gitter und Schatten
     final cone = Path()
-      ..moveTo(33, 58)
-      ..lineTo(67, 58)
-      ..lineTo(50, 92)
+      ..moveTo(31, 56)
+      ..lineTo(69, 56)
+      ..lineTo(50, 93)
       ..close();
-    c.drawPath(cone, _f(const Color(0xFFE8B070)));
+    c.drawPath(
+      cone,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFFF0C080), Color(0xFFD9964E)],
+        ).createShader(const Rect.fromLTWH(31, 56, 38, 37)),
+    );
     c.save();
     c.clipPath(cone);
-    for (var i = -3; i < 6; i++) {
+    for (var i = -3; i < 7; i++) {
       c.drawLine(
-        Offset(30 + i * 7, 56),
-        Offset(50 + i * 7, 96),
-        _s(const Color(0xFFC98E4A), 1.2),
+        Offset(28 + i * 7, 54),
+        Offset(50 + i * 7, 98),
+        _s(const Color(0xFFB87A3A), 1.1),
       );
       c.drawLine(
-        Offset(70 - i * 7, 56),
-        Offset(50 - i * 7, 96),
-        _s(const Color(0xFFC98E4A), 1.2),
+        Offset(72 - i * 7, 54),
+        Offset(50 - i * 7, 98),
+        _s(const Color(0xFFB87A3A), 1.1),
       );
     }
+    c.drawRect(const Rect.fromLTWH(31, 56, 38, 6), _f(const Color(0x33000000)));
     c.restore();
-    final cols = [
-      const Color(0xFFF7B3C2),
-      const Color(0xFFFFF0B8),
-      const Color(0xFF9B6B43),
-    ];
-    final amount = [
-      (f * 3).clamp(0.0, 1.0),
-      ((f - 1 / 3) * 3).clamp(0.0, 1.0),
-      ((f - 2 / 3) * 3).clamp(0.0, 1.0),
-    ];
-    var y = 52.0;
+    // Kugeln von unten nach oben
+    // Kugel 0 unten (schmilzt zuletzt), Kugel 2 oben (schmilzt zuerst)
+    var y = 54.0;
     for (var i = 0; i < 3; i++) {
-      final a = amount[i];
-      if (a <= 0.02) continue;
-      final r = 15 * (0.55 + 0.45 * a);
-      final cy = y - r * 0.6;
-      c.drawOval(
-        Rect.fromCenter(
-          center: Offset(50, cy),
-          width: r * 2.3,
-          height: r * 2 * (0.7 + 0.3 * a),
-        ),
-        _f(cols[i]),
+      final aa = [
+        (f * 3).clamp(0.0, 1.0),
+        ((f - 1 / 3) * 3).clamp(0.0, 1.0),
+        ((f - 2 / 3) * 3).clamp(0.0, 1.0),
+      ][i];
+      if (aa <= 0.02) continue;
+      final r = 15.5 * (0.55 + 0.45 * aa);
+      final h = r * (1.55 + 0.45 * aa);
+      final cy = y - h * 0.5;
+      final base = cols[i];
+      final rect = Rect.fromCenter(
+        center: Offset(50, cy),
+        width: r * 2.35,
+        height: h,
       );
-      // Glanzlicht
-      c.drawCircle(
-        Offset(44, cy - r * 0.35),
-        r * 0.16,
-        _f(Colors.white.withValues(alpha: 0.6)),
-      );
-      // Tropfen über den Waffelrand
-      if (a < 1) {
-        c.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromLTWH(36 + i * 6, cy, 4, 6 + (1 - a) * 14),
-            const Radius.circular(2),
-          ),
-          _f(cols[i]),
+      // Kugel mit Tropfenrand (Wellenkante unten)
+      final body = Path()..addOval(rect);
+      final skirt = Path()..moveTo(rect.left + r * 0.15, cy + h * 0.18);
+      const n = 6;
+      final drip = (1 - aa) * 10 + 2.5;
+      for (var k = 0; k <= n; k++) {
+        final x = rect.left + r * 0.15 + (rect.width - r * 0.3) * k / n;
+        final dy = k.isOdd ? drip : 1.2;
+        skirt.quadraticBezierTo(
+          x - 2,
+          cy + h * 0.5 + dy,
+          x,
+          cy + h * 0.38 + dy * 0.7,
         );
       }
-      y -= r * 1.1;
-    }
-    if (f > 0.02) {
-      final drop = calm ? 0.0 : (t * 0.8) % 1;
+      skirt
+        ..lineTo(rect.right - r * 0.15, cy + h * 0.1)
+        ..close();
+      final blob = Path.combine(PathOperation.union, body, skirt);
+      c.drawPath(blob.shift(const Offset(0, 1.2)), _f(const Color(0x22000000)));
+      c.drawPath(
+        blob,
+        Paint()
+          ..shader = RadialGradient(
+            center: const Alignment(-0.4, -0.6),
+            radius: 1.1,
+            colors: [base.$1, Color.lerp(base.$1, base.$2, 0.55)!, base.$2],
+            stops: const [0, 0.55, 1],
+          ).createShader(rect),
+      );
       c.drawOval(
         Rect.fromCenter(
-          center: Offset(66, 60 + drop * 30),
-          width: 3.5,
-          height: 5,
+          center: Offset(rect.left + r * 0.7, cy - h * 0.25),
+          width: r * 0.7,
+          height: r * 0.4,
         ),
-        _f(cols[0].withValues(alpha: 1 - drop)),
+        _f(Colors.white.withValues(alpha: 0.55)),
+      );
+      if (i == 2) {
+        // Streusel auf der obersten Kugel
+        const sp = [Color(0xFFFF6B6B), Color(0xFF4DB6FF), Color(0xFFFFD84D)];
+        for (var k = 0; k < 7; k++) {
+          final ang = k * 0.9 + 0.3;
+          final p = Offset(
+            50 + math.cos(ang) * r * (0.35 + 0.35 * ((k * 37) % 5) / 5),
+            cy - h * 0.12 + math.sin(ang) * h * 0.22,
+          );
+          c.save();
+          c.translate(p.dx, p.dy);
+          c.rotate(k * 1.3);
+          c.drawRRect(
+            RRect.fromRectAndRadius(
+              const Rect.fromLTWH(-1.6, -0.5, 3.2, 1.0),
+              const Radius.circular(0.5),
+            ),
+            _f(sp[k % 3]),
+          );
+          c.restore();
+        }
+      }
+      y -= h * 0.78;
+    }
+    // Kirsche, solange die oberste Kugel noch da ist
+    if (f > 0.7) {
+      final k = Offset(50, y - 2);
+      c.drawCircle(k, 3.6, _f(const Color(0xFFD62C3A)));
+      c.drawCircle(
+        k.translate(-1.1, -1.2),
+        1.1,
+        _f(Colors.white.withValues(alpha: 0.7)),
+      );
+      c.drawPath(
+        Path()
+          ..moveTo(k.dx, k.dy - 3)
+          ..quadraticBezierTo(k.dx + 3, k.dy - 8, k.dx + 6, k.dy - 8),
+        _s(const Color(0xFF3F7A3A), 1),
+      );
+    }
+    // fallender Tropfen
+    if (f > 0.02 && f < 0.995) {
+      final drop = calm ? 0.35 : (t * 0.7) % 1;
+      c.drawOval(
+        Rect.fromCenter(
+          center: Offset(66, 66 + drop * 27),
+          width: 3.4,
+          height: 5 + drop * 2,
+        ),
+        _f(cols[0].$2.withValues(alpha: 1 - drop * 0.8)),
       );
     }
     c.restore();

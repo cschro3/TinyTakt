@@ -2,7 +2,7 @@
 
 ## Real ausgeführt
 * `flutter analyze`: ohne Befunde (Lint `curly_braces_in_flow_control_structures` bewusst aus).
-* `flutter test`: **176 Tests bestanden** (u. a. Engine, Controller inkl. Audio-Effekte, Entitlement, Elternsicherung, Käufe, Widget/Layout/A11y, Premium-Kunst 14, Apple-Music-Modul, Plan-Modus, Store-Screenshot-Renderer, Performance-Messung). `flutter analyze`: keine Befunde. Redesign: siehe `docs/REDESIGN_REPORT.md`.
+* `flutter test`: **177 Tests bestanden** (u. a. Engine, Controller inkl. Audio-Effekte, Entitlement, Elternsicherung, Käufe, Widget/Layout/A11y, Premium-Kunst 14, Apple-Music-Modul, Plan-Modus, Store-Screenshot-Renderer, Performance-Messung). `flutter analyze`: keine Befunde. Redesign: siehe `docs/REDESIGN_REPORT.md`.
 * Android: `flutter build apk --release` (59 MB, alle ABIs, **mit Debug-Schlüssel signiert – nur Prüf-Build**) und `flutter build appbundle --release` (57,7 MB, **unsigniert**) erfolgreich. targetSdk 36, Berechtigungen: POST_NOTIFICATIONS, USE_EXACT_ALARM, RECEIVE_BOOT_COMPLETED, VIBRATE, BILLING, INTERNET, ACCESS_NETWORK_STATE.
 
 ## NICHT ausgeführt / nicht möglich in dieser Umgebung
