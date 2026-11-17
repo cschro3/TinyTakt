@@ -73,6 +73,28 @@ class MeadowBackdropPainter extends CustomPainter {
   static const _cols = 24;
   static const _rows = 56;
   static Uint16List? _indices;
+  static final Map<String, ui.Image> _extImages = {};
+
+  /// Die weichgezeichneten Streifen sind statisch: einmal als Bild rendern (Blur-Layer
+  /// würden sonst in jedem Bild neu gerastert). Fallback: Picture, falls nicht unterstützt.
+  ui.Image? _extImage(String key, Size size) {
+    final hit = _extImages[key];
+    if (hit != null) return hit;
+    try {
+      final rec = ui.PictureRecorder();
+      _extension(Canvas(rec), size);
+      final pic = rec.endRecording();
+      final img = pic.toImageSync(size.width.round(), size.height.round());
+      pic.dispose();
+      if (_extImages.length > 3) {
+        final k = _extImages.keys.first;
+        _extImages.remove(k)?.dispose();
+      }
+      return _extImages[key] = img;
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -90,8 +112,18 @@ class MeadowBackdropPainter extends CustomPainter {
     );
     final key =
         'story.ext.${size.width.round()}x${size.height.round()}.${geo.top0.round()}';
-    canvas.drawPicture(PictureCache.get(key, (c) => _extension(c, size)));
-    _drawFeatheredMesh(canvas, size);
+    final ext = _extImage(key, size);
+    if (ext != null) {
+      canvas.drawImageRect(
+        ext,
+        Rect.fromLTWH(0, 0, ext.width.toDouble(), ext.height.toDouble()),
+        Offset.zero & size,
+        Paint()..filterQuality = FilterQuality.low,
+      );
+    } else {
+      canvas.drawPicture(PictureCache.get(key, (c) => _extension(c, size)));
+    }
+    _drawMesh(canvas, size);
     if (!calm) _fx(canvas, size, s);
     final bt = geo.imageBottom;
     if (bt < size.height) {
@@ -122,7 +154,7 @@ class MeadowBackdropPainter extends CustomPainter {
   /// (weichgezeichnete Kopie des Bildrandes), damit der Übergang scharf → unscharf nahtlos ist.
   void _extension(Canvas c, Size size) {
     final s = geo.s;
-    const f = 70.0; // Länge der Fade-Zone (siehe _drawFeatheredMesh)
+    const f = 70.0; // Länge der Fade-Zone (siehe _drawMesh)
     final w = MeadowPath.imageSize.width;
     final h = MeadowPath.imageSize.height;
     final paint = Paint()..filterQuality = FilterQuality.medium;
@@ -200,62 +232,30 @@ class MeadowBackdropPainter extends CustomPainter {
     }
   }
 
-  /// Mesh-Bild mit weichen oberen/unteren Rändern, damit die Erweiterungsstreifen nahtlos anschließen.
-  void _drawFeatheredMesh(Canvas canvas, Size size) {
-    final top = geo.top0, bottom = geo.imageBottom;
-    final needTop = top > 1, needBottom = bottom < size.height - 1;
-    if (!needTop && !needBottom) return _drawMesh(canvas);
-    final bounds = Offset.zero & size;
-    canvas.saveLayer(bounds, Paint());
-    _drawMesh(canvas);
-    const f = 70.0;
-    final stops = <double>[];
-    final cols = <Color>[];
-    void stop(double y, double a) {
-      stops.add((y / size.height).clamp(0.0, 1.0));
-      cols.add(Color.fromRGBO(0, 0, 0, a));
-    }
-
-    if (needTop) {
-      stop(0, 0);
-      stop(top, 0);
-      stop(top + f, 1);
-    } else {
-      stop(0, 1);
-    }
-    if (needBottom) {
-      stop(bottom - f, 1);
-      stop(bottom, 0);
-      stop(size.height, 0);
-    } else {
-      stop(size.height, 1);
-    }
-    canvas.drawRect(
-      bounds,
-      Paint()
-        ..blendMode = BlendMode.dstIn
-        ..shader = ui.Gradient.linear(
-          Offset.zero,
-          Offset(0, size.height),
-          cols,
-          stops,
-        ),
-    );
-    canvas.restore();
-  }
-
-  void _drawMesh(Canvas canvas) {
+  /// Mesh-Bild; obere/untere Ränder blenden per Vertex-Alpha aus (kein Offscreen-Layer),
+  /// damit die weichgezeichneten Erweiterungsstreifen nahtlos anschließen.
+  void _drawMesh(Canvas canvas, Size screen) {
     final s = geo.s;
     final w = MeadowPath.imageSize.width;
     final h = MeadowPath.imageSize.height;
     final nx = _cols + 1, ny = _rows + 1;
     final pos = Float32List(nx * ny * 2);
     final tex = Float32List(nx * ny * 2);
+    final colors = Int32List(nx * ny);
+    const fade = 70.0;
+    final top0 = geo.top0, bottom0 = geo.imageBottom;
+    final fadeTop = top0 > 1, fadeBottom = bottom0 < screen.height - 1;
     final amp = calm ? 0.0 : 3.0 * (s / 0.325);
     for (var j = 0; j < ny; j++) {
       final yi = h * j / _rows;
       final sy = geo.ymap(yi);
       final wgt = _sstep(700, h, yi);
+      var alpha = 1.0;
+      if (fadeTop)
+        alpha = math.min(alpha, ((sy - top0) / fade).clamp(0.0, 1.0));
+      if (fadeBottom)
+        alpha = math.min(alpha, ((bottom0 - sy) / fade).clamp(0.0, 1.0));
+      final argb = Color.fromRGBO(255, 255, 255, alpha).toARGB32();
       for (var i = 0; i < nx; i++) {
         final xi = w * i / _cols;
         final dx = amp * wgt * math.sin(t * 1.25 + yi * 0.018 + xi * 0.011);
@@ -264,6 +264,7 @@ class MeadowBackdropPainter extends CustomPainter {
         pos[k + 1] = sy;
         tex[k] = xi;
         tex[k + 1] = yi;
+        colors[j * nx + i] = argb;
       }
     }
     _indices ??= () {
@@ -290,11 +291,12 @@ class MeadowBackdropPainter extends CustomPainter {
       ui.VertexMode.triangles,
       pos,
       textureCoordinates: tex,
+      colors: colors,
       indices: _indices!,
     );
     canvas.drawVertices(
       verts,
-      BlendMode.srcOver,
+      BlendMode.modulate,
       Paint()
         ..shader = ui.ImageShader(
           image,
