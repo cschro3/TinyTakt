@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../domain/catalog.dart';
+import '../art/worlds/registry.dart';
 
 /// Gemalte Hintergrundwelten (eigene Vektorgrafik). [t] steuert sanfte Bewegung,
 /// bei [calm] bleibt alles statisch.
@@ -18,6 +19,11 @@ class ScenePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final premium = premiumWorlds[bg.id];
+    if (premium != null) {
+      premium.paint(canvas, size, t, calm);
+      return;
+    }
     final r = Offset.zero & size;
     canvas.drawRect(
       r,

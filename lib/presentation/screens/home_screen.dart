@@ -113,6 +113,7 @@ class _HomeScreenState extends State<HomeScreen>
                         countdown: timer.countdown,
                         fraction: () => timer.displayFraction,
                         breakPhase: timer.planView?.isPause ?? false,
+                        scenery: bg.scenery,
                       ),
                     );
                     final controls = _Controls(locked: locked);

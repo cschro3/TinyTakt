@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+export '../art/timers/adventure.dart';
+
 /// Reine Darstellung: nimmt den Restanteil (1 → 0) entgegen, kennt keine Zeitlogik.
 
 /// A. Kreis-Timer: Fortschrittsring leert sich im Uhrzeigersinn, dazu Strichmarken.
@@ -86,128 +88,7 @@ class RingPainter extends CustomPainter {
       o.fraction != fraction || o.color != color;
 }
 
-/// B. Abenteuer-Timer: Weg durch die Landschaft. Liefert die Position der Figur.
-class AdventureTrack {
-  const AdventureTrack(this.size);
-  final Size size;
-
-  Offset at(double progress) {
-    final x = size.width * (0.12 + 0.76 * progress);
-    final y =
-        size.height *
-        (0.62 - 0.12 * math.sin(progress * math.pi * 2) - 0.06 * progress);
-    return Offset(x, y);
-  }
-}
-
-class AdventurePainter extends CustomPainter {
-  AdventurePainter({
-    required this.fraction,
-    required this.t,
-    this.calm = false,
-  });
-  final double fraction;
-  final double t;
-  final bool calm;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final track = AdventureTrack(size);
-    final progress = 1 - fraction;
-    // Weg
-    final path = Path()..moveTo(track.at(0).dx, track.at(0).dy);
-    for (var i = 1; i <= 60; i++) {
-      final p = track.at(i / 60);
-      path.lineTo(p.dx, p.dy);
-    }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = const Color(0xFFF2DDB0)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = size.height * 0.1
-        ..strokeCap = StrokeCap.round,
-    );
-    // Gestrichelte Mitte
-    for (var i = 0; i < 24; i++) {
-      final p = track.at(i / 24 + 0.01);
-      canvas.drawCircle(
-        p,
-        size.height * 0.008,
-        Paint()..color = Colors.white.withValues(alpha: 0.9),
-      );
-    }
-    // Restweg-Markierungen (Fußspuren hinter der Figur)
-    for (var i = 0; i < 12; i++) {
-      final f = i / 12;
-      if (f < progress - 0.04) {
-        canvas.drawCircle(
-          track.at(f) + Offset(0, size.height * 0.045),
-          size.height * 0.012,
-          Paint()..color = const Color(0x33000000),
-        );
-      }
-    }
-    // Ziel: Fahne
-    final goal = track.at(1);
-    final pole = Paint()
-      ..color = const Color(0xFF6B4423)
-      ..strokeWidth = 5
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      goal + Offset(0, size.height * 0.03),
-      goal + Offset(0, -size.height * 0.2),
-      pole,
-    );
-    final wave = calm ? 0.0 : math.sin(t * 4) * 4;
-    canvas.drawPath(
-      Path()
-        ..moveTo(goal.dx, goal.dy - size.height * 0.2)
-        ..lineTo(
-          goal.dx + size.height * 0.13,
-          goal.dy - size.height * 0.165 + wave,
-        )
-        ..lineTo(goal.dx, goal.dy - size.height * 0.13)
-        ..close(),
-      Paint()..color = const Color(0xFFE5574B),
-    );
-    // Start-Markierung
-    canvas.drawCircle(
-      track.at(0) + Offset(0, size.height * 0.045),
-      size.height * 0.02,
-      Paint()..color = const Color(0xFF3FBF7F),
-    );
-    // Fortschrittsband unten (zusätzlich zur Position, nicht nur Farbe)
-    final barRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        size.width * 0.12,
-        size.height * 0.9,
-        size.width * 0.76,
-        size.height * 0.035,
-      ),
-      const Radius.circular(10),
-    );
-    canvas.drawRRect(
-      barRect,
-      Paint()..color = Colors.white.withValues(alpha: 0.6),
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          size.width * 0.12,
-          size.height * 0.9,
-          size.width * 0.76 * progress.clamp(0.0, 1.0),
-          size.height * 0.035,
-        ),
-        const Radius.circular(10),
-      ),
-      Paint()..color = const Color(0xFF2FC4A8),
-    );
-  }
-
-  @override
-  bool shouldRepaint(AdventurePainter o) => o.fraction != fraction || o.t != t;
-}
+/// B. Abenteuer-Timer: siehe art/timers/adventure.dart (2,5D-Weg mit Wegmarken und Häuschen).
 
 /// C. Füllstand-Timer: Glas, das sich leert. Gibt die Wasserlinie zurück.
 class FillGeometry {

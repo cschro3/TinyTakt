@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../domain/catalog.dart';
+import '../art/figures/registry.dart';
+import '../art/rig.dart';
 
 /// Stimmung/Animationszustand einer Figur.
 enum Mood { idle, active, sleepy, happy }
@@ -18,6 +20,8 @@ class CharacterPainter extends CustomPainter {
     this.mood = Mood.idle,
     this.calm = false,
     this.shadow = true,
+    this.emotion,
+    this.emotionT = 0,
   });
 
   final CharacterSpec spec;
@@ -25,6 +29,18 @@ class CharacterPainter extends CustomPainter {
   final Mood mood;
   final bool calm;
   final bool shadow;
+
+  /// Gefühl der Premium-Figuren (null = aus [mood] abgeleitet) und Sekunden seit dessen Beginn.
+  final Emotion? emotion;
+  final double emotionT;
+
+  Emotion get _emotion =>
+      emotion ??
+      switch (mood) {
+        Mood.sleepy => Emotion.sleepy,
+        Mood.happy => Emotion.celebrate,
+        _ => Emotion.calm,
+      };
 
   static const _ink = Color(0xFF2B2440);
   static const _w = Colors.white;
@@ -37,6 +53,18 @@ class CharacterPainter extends CustomPainter {
     canvas.save();
     canvas.translate(size.width / 2, size.height / 2);
     canvas.scale(s);
+    final premium = premiumFigures[spec.id];
+    if (premium != null) {
+      // Premium-Rig: eigener Körperbau, Fell, Licht, Emotionen
+      final et = emotion == null && mood == Mood.happy ? t : emotionT;
+      premium.paint(
+        canvas,
+        computePose(premium.personality, _emotion, t, et, calm: calm),
+        calm ? 0 : t,
+      );
+      canvas.restore();
+      return;
+    }
     if (shadow) {
       canvas.drawOval(
         Rect.fromCenter(
@@ -2931,7 +2959,12 @@ class CharacterPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(CharacterPainter old) =>
-      old.t != t || old.mood != mood || old.spec != spec || old.calm != calm;
+      old.t != t ||
+      old.mood != mood ||
+      old.spec != spec ||
+      old.calm != calm ||
+      old.emotion != emotion ||
+      old.emotionT != emotionT;
 }
 
 /// Bequemes Widget für Vorschauen (z.B. Auswahlraster).
