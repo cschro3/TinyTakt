@@ -308,7 +308,7 @@ class _TimerStageState extends State<TimerStage>
           children: [
             CustomPaint(
               size: size,
-              painter: RainbowPainter(fraction: frac),
+              painter: RainbowPainter(fraction: frac, t: t),
             ),
             Positioned(bottom: side * 0.04, child: _figure(side * 0.42, t)),
             if (widget.countdown != null) _countdown(side),
