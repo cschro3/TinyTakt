@@ -18,3 +18,14 @@
 ## Technik
 `ArtImages` lädt beide WebP; `StoryScene` zeichnet Hintergrund-Mesh (24×56, Wind), Lichteffekte, Mira (28×28-Mesh) und Etappen-Effekte; `StoryStage` meldet den Layout-Bereich und zeigt die **Flutter-Fortschrittsleiste** (`StoryProgressBar`) und den 3-2-1-Countdown. Zeit, Pause, Stopp, Buttons und Musik bleiben die bisherigen Flutter-Komponenten. Aktiv nur bei **Mira + Blumenwiese + Abenteuer**; ohne geladene Bilder greift die bisherige Bühne.
 Performance: ca. 2 600 Dreiecke je Bild, kein Shader-Wechsel; im ruhigen Modus ca. 4 Bilder/s.
+
+## Staging und Verifikation (tatsächlich ausgeführt)
+- **Branch:** `feature/mira-meadow-slice` (Basis `feature/premium-redesign`), nichts nach `main` gemergt.
+- **Staging-Link (ohne Login):** https://tinytakt-preview-git-feature-mira-meadow-slice-cschro.vercel.app – baut Vercel automatisch bei jedem Push des Branches.
+- **Version prüfen:** `…/build.json` (SHA, Branch, Zeit) und in der App unter Eltern → Information → „Version & Build“. Die SHA ist die des Basis-Commits der Web-Dateien (`tools/build_web.sh`).
+- **Ausgelieferte Dateien verifiziert:** `mira_prototype.webp` (299 664 B, `image/webp`), `meadow_prototype.webp` (407 480 B), `main.dart.js` (3,83 MB), `build.json` mit der erwarteten SHA.
+- **Echter Browserlauf** (Chromium, 393×852 @2, iPhone-Maße, CanvasKit/WebGL-Software): Onboarding → Start-Bildschirm mit vorgewählter Mira + Wiese → 1-Minuten-Timer → Start → Pause (Zeit stand >6 s still) → Fortsetzen → Ende („Geschafft!“, Mira am Häuschen). Bilder: `staging_chromium_*.png`. Kein Safari/iPhone-Test möglich.
+- **PWA-Cache:** `--pwa-strategy=none` (leerer Service Worker, kein Cache); ein alter, auf dem iPhone installierter Worker wird beim nächsten Laden ersetzt. Falls die Home-Bildschirm-App noch „alt“ zeigt: App schließen und neu öffnen, notfalls Verknüpfung löschen und neu anlegen.
+- **Ursache des „flachen“ Eindrucks:** Die Haupt-URL `tinytakt-preview.vercel.app` baut von `main`; dort liegt der Stand vor dem Redesign (Commit `4bce4d6`). Das Staging-Preview ist nur über die Branch-URL erreichbar.
+- **Bildrate:** im Headless-Browser ohne GPU (Software-WebGL) 6,3 Bilder/s neu vs. 2,0 am Vorgänger-Stand – nur als relativer Vergleich brauchbar, **keine Aussage über iPhone-Leistung**. Maßnahmen: Erweiterungsstreifen als Bild gecacht, Rand-Fade per Vertex-Alpha (kein Vollbild-Layer), ca. 2 600 Dreiecke je Bild.
+- **Bekannt, nicht neu:** In beiden Ständen meldet der Headless-Browser einmal `PAGEERROR: Error` ohne Text (vermutlich Wake-Lock-API im Headless-Modus); die App läuft davon unbeeinflusst weiter.
