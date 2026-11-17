@@ -8,6 +8,7 @@ import '../../domain/catalog.dart';
 import '../theme.dart';
 import '../../platform/apple_music_service.dart';
 import 'apple_music_screen.dart';
+import '../../app/build_info.dart';
 import 'legal_screen.dart';
 import 'pro_screen.dart';
 
@@ -314,6 +315,13 @@ class ParentScreen extends StatelessWidget {
                     MaterialPageRoute<void>(
                       builder: (_) => const ImprintScreen(),
                     ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.verified_rounded),
+                  title: Text(context.tr('Version & Build', 'Version & build')),
+                  subtitle: SelectableText(
+                    '$buildLabel\n${context.tr('gebaut', 'built')}: $buildTime',
                   ),
                 ),
                 ListTile(
