@@ -118,37 +118,49 @@ class MeadowBackdropPainter extends CustomPainter {
     );
   }
 
+  /// Erweiterungsstreifen oben/unten. Sie laufen **unter** die Fade-Zone des Mesh-Bildes weiter
+  /// (weichgezeichnete Kopie des Bildrandes), damit der Übergang scharf → unscharf nahtlos ist.
   void _extension(Canvas c, Size size) {
     final s = geo.s;
+    const f = 70.0; // Länge der Fade-Zone (siehe _drawFeatheredMesh)
     final w = MeadowPath.imageSize.width;
     final h = MeadowPath.imageSize.height;
-    // oben: gespiegelte oberste Bildzeilen
+    final paint = Paint()..filterQuality = FilterQuality.medium;
     if (geo.top0 > 1) {
-      final srcH = math.min(h * 0.4, geo.top0 / s);
+      final zone = Rect.fromLTWH(0, 0, size.width, geo.top0 + f);
+      final srcH = math.min(h * 0.4, math.max(geo.top0, f) / s);
       c.save();
-      c.clipRect(Rect.fromLTWH(0, 0, size.width, geo.top0 + 2));
+      c.clipRect(zone);
       c.saveLayer(
-        Rect.fromLTWH(0, 0, size.width, geo.top0 + 2),
+        zone,
         Paint()..imageFilter = ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
       );
+      // gespiegelt oberhalb der Naht
+      c.save();
       c.translate(0, geo.top0);
       c.scale(1, -1);
       c.drawImageRect(
         image,
         Rect.fromLTWH(0, 0, w, srcH),
         Rect.fromLTWH(0, 0, size.width, srcH * s),
-        Paint()..filterQuality = FilterQuality.medium,
+        paint,
+      );
+      c.restore();
+      // unverändert unterhalb der Naht (unter der Fade-Zone)
+      c.drawImageRect(
+        image,
+        Rect.fromLTWH(0, 0, w, f / s),
+        Rect.fromLTWH(0, geo.top0, size.width, f),
+        paint,
       );
       c.restore();
       c.restore();
     }
-    // unten: gespiegelte unterste Bildzeilen, mit Tiefenunschärfe
     final bottom = geo.imageBottom;
     if (bottom < size.height - 1) {
       final need = size.height - bottom + 4;
-      final srcH = math.min(h * 0.5, need / s);
-      c.save();
-      c.clipRect(Rect.fromLTWH(0, bottom - 2, size.width, need + 2));
+      final k = s * 1.32; // das Unterband ist im Mesh um 1,32 gestreckt
+      final zone = Rect.fromLTWH(0, bottom - f, size.width, need + f);
       c.drawRect(
         Rect.fromLTWH(0, bottom - 2, size.width, need + 2),
         Paint()
@@ -158,19 +170,30 @@ class MeadowBackdropPainter extends CustomPainter {
             const [Color(0xFF5E9E34), Color(0xFF3F7F2C)],
           ),
       );
+      c.save();
+      c.clipRect(zone);
       c.saveLayer(
-        Rect.fromLTWH(0, bottom - 2, size.width, need + 2),
+        zone,
         Paint()
-          ..color = const Color(0x99FFFFFF)
+          ..color = const Color(0xB3FFFFFF)
           ..imageFilter = ui.ImageFilter.blur(sigmaX: 11, sigmaY: 11),
       );
+      final srcH = math.min(h * 0.5, need / k);
+      c.save();
       c.translate(0, bottom);
       c.scale(1, -1);
       c.drawImageRect(
         image,
         Rect.fromLTWH(0, h - srcH, w, srcH),
-        Rect.fromLTWH(0, -srcH * s, size.width, srcH * s),
-        Paint()..filterQuality = FilterQuality.medium,
+        Rect.fromLTWH(0, -srcH * k, size.width, srcH * k),
+        paint,
+      );
+      c.restore();
+      c.drawImageRect(
+        image,
+        Rect.fromLTWH(0, h - f / k, w, f / k),
+        Rect.fromLTWH(0, bottom - f, size.width, f),
+        paint,
       );
       c.restore();
       c.restore();
