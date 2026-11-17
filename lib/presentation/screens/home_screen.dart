@@ -5,6 +5,8 @@ import '../../app/deps.dart';
 import '../../domain/catalog.dart';
 import '../../domain/session_plan.dart';
 import '../../domain/timer_engine.dart';
+import '../art/story/art_images.dart';
+import '../art/story/story_scene.dart';
 import '../painters/character_painter.dart';
 import '../painters/scene_painter.dart';
 import '../theme.dart';
@@ -42,10 +44,12 @@ class _HomeScreenState extends State<HomeScreen>
   final ValueNotifier<double> _t = ValueNotifier(0);
   Motif? _motif;
   String? _motifFor;
+  final StoryController _story = StoryController();
 
   @override
   void initState() {
     super.initState();
+    ArtImages.instance.ensureLoaded();
     _ticker = createTicker((d) {
       final t = d.inMicroseconds / 1e6;
       // Hintergrund nur ca. 12 Bilder/s – spart Akku, wirkt ruhig.
@@ -57,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen>
   void dispose() {
     _ticker.dispose();
     _t.dispose();
+    _story.dispose();
     super.dispose();
   }
 
@@ -73,9 +78,16 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     final d = AppScope.of(context);
     return ListenableBuilder(
-      listenable: d.all,
+      listenable: Listenable.merge([d.all, ArtImages.instance]),
       builder: (context, _) {
         final bg = effectiveBackground(d);
+        // Illustrierte Story-Szene (Prototyp): Mira + Blumenwiese + Abenteuer-Timer
+        final storyOn =
+            ArtImages.instance.ready &&
+            d.settings.profile.characterId == 'nova_mira' &&
+            effectiveCharacter(d).id == 'nova_mira' &&
+            bg.id == 'meadow' &&
+            effectiveStyle(d) == TimerStyle.adventure;
         final calm =
             d.settings.calmMode || MediaQuery.of(context).disableAnimations;
         final timer = d.timer;
@@ -93,29 +105,47 @@ class _HomeScreenState extends State<HomeScreen>
           body: Stack(
             fit: StackFit.expand,
             children: [
-              ValueListenableBuilder<double>(
-                valueListenable: _t,
-                builder: (_, t, _) => CustomPaint(
-                  painter: ScenePainter(bg, t: t, calm: calm),
+              if (storyOn)
+                StoryScene(
+                  engine: timer.engine,
+                  controller: _story,
+                  fraction: () => timer.displayFraction,
+                  calm: calm,
+                  breakPhase: timer.planView?.isPause ?? false,
+                )
+              else
+                ValueListenableBuilder<double>(
+                  valueListenable: _t,
+                  builder: (_, t, _) => CustomPaint(
+                    painter: ScenePainter(bg, t: t, calm: calm),
+                  ),
                 ),
-              ),
               SafeArea(
                 child: LayoutBuilder(
                   builder: (context, c) {
                     final landscape = c.maxWidth > c.maxHeight * 1.1;
-                    final stage = Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: TimerStage(
-                        engine: timer.engine,
-                        style: effectiveStyle(d),
-                        motif: motif,
-                        calm: calm,
-                        countdown: timer.countdown,
-                        fraction: () => timer.displayFraction,
-                        breakPhase: timer.planView?.isPause ?? false,
-                        scenery: bg.scenery,
-                      ),
-                    );
+                    final stage = storyOn
+                        ? StoryStage(
+                            controller: _story,
+                            countdown: timer.countdown,
+                            semanticsLabel: context.tr(
+                              'Fortschritt',
+                              'Progress',
+                            ),
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: TimerStage(
+                              engine: timer.engine,
+                              style: effectiveStyle(d),
+                              motif: motif,
+                              calm: calm,
+                              countdown: timer.countdown,
+                              fraction: () => timer.displayFraction,
+                              breakPhase: timer.planView?.isPause ?? false,
+                              scenery: bg.scenery,
+                            ),
+                          );
                     final controls = _Controls(locked: locked);
                     final top = _TopBar(locked: locked);
                     if (landscape) {

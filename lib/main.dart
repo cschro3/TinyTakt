@@ -5,6 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app/app.dart';
+import 'app/build_info.dart';
 import 'app/deps.dart';
 import 'app/timer_controller.dart';
 import 'data/entitlement_repository.dart';
@@ -12,6 +13,7 @@ import 'data/motif_repository.dart';
 import 'data/parental_gate.dart';
 import 'data/settings_repository.dart';
 import 'data/stores.dart';
+import 'domain/catalog.dart' show TimerStyle;
 import 'domain/clock.dart';
 import 'domain/timer_engine.dart';
 import 'platform/apple_music_service.dart';
@@ -22,6 +24,9 @@ import 'platform/purchase_service.dart';
 /// Optionale Server-Prüfung der Käufe (--dart-define=PURCHASE_VERIFY_URL=https://…).
 const _verifyUrl = String.fromEnvironment('PURCHASE_VERIFY_URL');
 const _previewPro = bool.fromEnvironment('PREVIEW_PRO');
+
+/// Nur Staging-Web (--dart-define=PREVIEW_SLICE=true): wählt einmal je Build Mira + Blumenwiese + Abenteuer vor.
+const _previewSlice = bool.fromEnvironment('PREVIEW_SLICE');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,6 +89,19 @@ Future<void> main() async {
     appleMusic: appleMusic,
   );
   await timer.init();
+  if (kIsWeb && _previewSlice) {
+    const key = 'preview_slice_applied';
+    if (prefs.getString(key) != buildSha) {
+      await settings.updateProfile(
+        (p) => p.copyWith(
+          characterId: 'nova_mira',
+          backgroundId: 'meadow',
+          style: TimerStyle.adventure,
+        ),
+      );
+      await prefs.setString(key, buildSha);
+    }
+  }
   runApp(TinyTaktApp(deps: deps));
   // Store-Abgleich nach dem ersten Frame, blockiert den Start nicht (Offline-tauglich).
   purchases.init().catchError(

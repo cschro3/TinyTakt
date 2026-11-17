@@ -7,7 +7,11 @@ set -euo pipefail
 SHA=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-flutter build web --release \
+# --pwa-strategy=none: kein Service-Worker-Cache (iPhone-Home-Bildschirm-App zeigt sonst alte
+# Versionen); ein bereits installierter alter Worker wird beim nächsten Laden abgeräumt.
+# PREVIEW_PRO / PREVIEW_SLICE: nur Staging – Pro-Inhalte offen, Mira + Wiese + Abenteuer vorgewählt.
+flutter build web --release --pwa-strategy=none \
+  --dart-define=PREVIEW_PRO=true --dart-define=PREVIEW_SLICE=true \
   --dart-define=GIT_SHA="$SHA" --dart-define=GIT_BRANCH="$BRANCH" --dart-define=BUILD_TIME="$TIME"
 keep=$(cat web_preview/vercel.json)
 rm -rf web_preview/*
