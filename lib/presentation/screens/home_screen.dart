@@ -140,12 +140,14 @@ class _HomeScreenState extends State<HomeScreen>
                         ],
                       );
                     }
+                    // Kleine Telefone: mehr Platz für die Bedienung, damit nichts abgeschnitten wird.
+                    final compact = c.maxHeight < 700;
                     return Column(
                       children: [
                         top,
-                        Expanded(flex: 6, child: stage),
+                        Expanded(flex: compact ? 4 : 6, child: stage),
                         Flexible(
-                          flex: 5,
+                          flex: compact ? 6 : 5,
                           child: Center(
                             child: SingleChildScrollView(child: controls),
                           ),

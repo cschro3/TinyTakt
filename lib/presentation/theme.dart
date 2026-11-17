@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
 /// Design-Tokens von TinyTakt.
@@ -25,6 +26,12 @@ class Brand {
       colorScheme: scheme,
       fontFamily: fontFamily,
       scaffoldBackgroundColor: cream,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       textTheme: const TextTheme().apply(bodyColor: ink, displayColor: ink),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(

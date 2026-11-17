@@ -4,6 +4,7 @@ import '../../app/deps.dart';
 import '../../domain/catalog.dart';
 import '../../platform/purchase_service.dart';
 import '../theme.dart';
+import '../painters/character_painter.dart';
 import '../widgets/gate_dialog.dart';
 
 /// Öffnet den Pro-Bildschirm – ausschließlich hinter der Elternsicherung.
@@ -82,6 +83,8 @@ class ProScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              const _ProHero(),
+              const SizedBox(height: 18),
               Text(
                 context.tr(
                   'Einmal kaufen, für immer nutzen',
@@ -245,6 +248,43 @@ class ProScreen extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Kopfbild: die drei NOVA-Freunde auf weichem Verlauf.
+class _ProHero extends StatelessWidget {
+  const _ProHero();
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: Container(
+        height: 150,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF5A4BC0), Color(0xFF3B2F7F), Color(0xFF241B57)],
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x33241B57),
+              blurRadius: 16,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            for (final id in const ['nova_lumi', 'nova_zeno', 'nova_mira'])
+              Expanded(child: CharacterView(spec: characterById(id))),
+          ],
+        ),
       ),
     );
   }

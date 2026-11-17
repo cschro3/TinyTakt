@@ -72,76 +72,134 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // „Lumi (der Ruhige)“ → Name + Beiname in zwei Zeilen statt abgeschnitten
+    final m = RegExp(r'^(.*?)\s*\((.*)\)\s*$').firstMatch(label);
+    final name = m?.group(1) ?? label;
+    final sub = m?.group(2);
+    const r = 24.0;
     return Semantics(
       button: true,
       selected: selected,
       label: label + (locked ? ', ${context.tr('Pro', 'Pro')}' : ''),
       excludeSemantics: true,
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: onTap,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: selected ? Brand.indigo : const Color(0xFFE3DEF1),
-                      width: selected ? 4 : 2,
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Opacity(
-                          opacity: locked ? 0.55 : 1,
-                          child: child,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+      child: AnimatedScale(
+        scale: selected ? 1.0 : 0.985,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(r),
+            boxShadow: [
+              BoxShadow(
+                color: (selected ? Brand.indigo : const Color(0xFF3B2F7F))
+                    .withValues(alpha: selected ? 0.28 : 0.08),
+                blurRadius: selected ? 16 : 8,
+                offset: const Offset(0, 4),
               ),
-              if (selected)
-                const Positioned(
-                  top: 6,
-                  right: 6,
-                  child: CircleAvatar(
-                    radius: 13,
-                    backgroundColor: Brand.indigo,
-                    child: Icon(
-                      Icons.check_rounded,
-                      size: 18,
-                      color: Colors.white,
+            ],
+          ),
+          child: Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(r),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(r),
+                        border: Border.all(
+                          color: selected
+                              ? Brand.indigo
+                              : const Color(0xFFE9E4F5),
+                          width: selected ? 3.5 : 1.5,
+                        ),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(6, 6, 6, 8),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(r - 8),
+                                gradient: const RadialGradient(
+                                  center: Alignment(0, -0.2),
+                                  radius: 0.9,
+                                  colors: [
+                                    Color(0xFFFFFFFF),
+                                    Color(0xFFF1ECFF),
+                                  ],
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Opacity(
+                                  opacity: locked ? 0.6 : 1,
+                                  child: child,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                              height: 1.1,
+                            ),
+                          ),
+                          if (sub != null)
+                            Text(
+                              sub,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11.5,
+                                height: 1.2,
+                                color: Color(0xFF6B6488),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              if (locked)
-                const Positioned(
-                  top: 6,
-                  right: 6,
-                  child: CircleAvatar(
-                    radius: 13,
-                    backgroundColor: Brand.sun,
-                    child: Icon(Icons.lock_rounded, size: 16, color: Brand.ink),
-                  ),
-                ),
-            ],
+                  if (selected)
+                    const Positioned(
+                      top: 8,
+                      right: 8,
+                      child: CircleAvatar(
+                        radius: 13,
+                        backgroundColor: Brand.indigo,
+                        child: Icon(
+                          Icons.check_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  if (locked)
+                    const Positioned(
+                      top: 8,
+                      right: 8,
+                      child: CircleAvatar(
+                        radius: 13,
+                        backgroundColor: Brand.sun,
+                        child: Icon(
+                          Icons.lock_rounded,
+                          size: 16,
+                          color: Brand.ink,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -154,7 +212,7 @@ SliverGridDelegate _grid(double extent) =>
       maxCrossAxisExtent: extent,
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      childAspectRatio: 0.92,
+      childAspectRatio: 0.8,
     );
 
 class _Characters extends StatelessWidget {

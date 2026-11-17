@@ -96,7 +96,7 @@ class ParentScreen extends StatelessWidget {
                   },
                 ),
                 _VolumeTile(
-                  label: context.tr('Alarm-Lautstärke', 'Alarm volume'),
+                  label: context.tr('Effekte & Alarm', 'Effects & alarm'),
                   value: s.alarmVolume,
                   onChanged: (v) => s.update((x) => x.alarmVolume = v),
                 ),
