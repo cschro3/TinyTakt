@@ -420,18 +420,34 @@ def alarm_music_box(out):
     return reverb(buf, 0.25, 1.2)
 
 
+# ---------- Effekte (sehr kurz, weich) ----------
+def sfx_start(out):  # zwei aufsteigende Glöckchen: "los geht's"
+    buf = np.zeros(int(1.6 * SR))
+    for i, n in enumerate([79, 86]):
+        place(buf, 0.45 * tone(midi(n), 1.2, "bell", d=0.7), i * 0.16)
+    return reverb(buf, 0.18, 0.8)
+
+
+def sfx_tick(out):  # weicher Tropfen für den 3-2-1-Countdown
+    buf = np.zeros(int(0.5 * SR))
+    place(buf, 0.6 * tone(midi(84), 0.35, "pluck", d=0.12), 0.0)
+    return buf
+
+
 def main():
     out = Path(sys.argv[1] if len(sys.argv) > 1 else "assets/audio")
     out.mkdir(parents=True, exist_ok=True)
     only = set(sys.argv[2:])
-    for name, fn in [(k, v) for k, v in globals().items() if k.startswith(("music_", "alarm_")) and callable(v)]:
+    for name, fn in [(k, v) for k, v in globals().items() if k.startswith(("music_", "alarm_", "sfx_")) and callable(v)]:
         if only and name not in only:
             continue
         x = fn(out)
         x = norm(x, 0.45 if name.startswith("music") else 0.7)
         if only and name.startswith("music"):  # neue Stücke auf ähnliche Lautheit wie die bestehenden bringen
             x = np.tanh(x * (0.09 / (np.sqrt((x ** 2).mean()) + 1e-9)) * 1.0) * 0.8
-        if name.startswith("alarm"):
+        if name.startswith("sfx"):
+            x = norm(x, 0.55)
+        if name.startswith(("alarm", "sfx")):
             x = fade_ends(x, 20)
             x[-int(0.3 * SR):] *= np.linspace(1, 0, int(0.3 * SR))
         save(name, x, out)

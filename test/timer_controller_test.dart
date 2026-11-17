@@ -36,6 +36,40 @@ void main() {
     notes = NoopNotificationService();
   });
 
+  test(
+    'Start spielt einen sanften Start-Effekt, außer bei Stumm/Ruhemodus',
+    () async {
+      var c = make();
+      await c.init();
+      await c.setDuration(const Duration(minutes: 5));
+      await c.start();
+      expect(audio.log, contains('sfx:start'));
+      c.dispose();
+
+      audio.log.clear();
+      await settings.update((s) => s.muted = true);
+      c = make();
+      await c.init();
+      await c.setDuration(const Duration(minutes: 5));
+      await c.start();
+      expect(audio.log.where((e) => e.startsWith('sfx:')), isEmpty);
+      expect(audio.log.where((e) => e.startsWith('music:')), isEmpty);
+      c.dispose();
+
+      audio.log.clear();
+      await settings.update((s) {
+        s.muted = false;
+        s.calmMode = true;
+      });
+      c = make();
+      await c.init();
+      await c.setDuration(const Duration(minutes: 5));
+      await c.start();
+      expect(audio.log.where((e) => e.startsWith('sfx:')), isEmpty);
+      c.dispose();
+    },
+  );
+
   test('Start plant Benachrichtigung, Pause/Stopp storniert sie', () async {
     final c = make();
     await c.init();

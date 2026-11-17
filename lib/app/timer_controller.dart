@@ -242,6 +242,9 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
     _startPolling();
     _keepAwake(settings.keepScreenOn);
     await _persist();
+    if (!settings.muted && !settings.calmMode) {
+      audio.playSfx(Sfx.start, settings.alarmVolume);
+    }
     _startMusic();
     await _scheduleNotification();
     notifyListeners();
