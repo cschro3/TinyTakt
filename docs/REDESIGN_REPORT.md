@@ -3,7 +3,7 @@
 Branch `feature/premium-redesign` (Stand vor Redesign: Tag `pre-premium-redesign`). Vergleichsbilder: `docs/redesign/`.
 
 ## A. Bestandsaufnahme (Befund vor dem Redesign)
-Alle 81 Figuren, 9 Welten und 10 Timer-Stile waren flache Vektorformen; Figuren animierten nur Wippen/Blinzeln; NOVA-Figuren hatten kaum Eigenheiten; Abenteuer-Timer war ein schwebender Weg; kein Abschlussmoment; Auswahlkarten schnitten Namen ab; ein Audio-Kanal-Mix ohne Crossfade/Pegelgrenzen. Die fünf vom Auftraggeber erwähnten Screenshots sind im Chat **nicht angekommen** – die Analyse stützt sich auf die eigenen Renderings der Vorgängerversion.
+Alle 81 Figuren, 9 Welten und 10 Timer-Stile waren flache Vektorformen; Figuren animierten nur Wippen/Blinzeln; NOVA-Figuren hatten kaum Eigenheiten; Abenteuer-Timer war ein schwebender Weg; kein Abschlussmoment; Auswahlkarten schnitten Namen ab; Widget-Tests mussten wegen höherer Karten auf `hitTestable()` umgestellt werden; Audio ohne Crossfade/Pegelgrenzen. Die fünf vom Auftraggeber erwähnten Screenshots sind im Chat **nicht angekommen** – die Analyse stützt sich auf die eigenen Renderings der Vorgängerversion.
 
 ## B–C. Umgesetzt
 | Bereich | Ergebnis |
@@ -19,7 +19,7 @@ Alle 81 Figuren, 9 Welten und 10 Timer-Stile waren flache Vektorformen; Figuren 
 
 ## D. Qualitätssicherung (reale Ergebnisse)
 - `flutter analyze`: keine Befunde.
-- `flutter test`: alle Tests grün (Vorher 118 → jetzt siehe Abschnitt „Teststand“ in `STATUS.md`); neu `test/premium_art_test.dart` (Rig-Logik, jede Figur × jede Emotion rendert sichtbar, Silhouetten paarweise verschieden, jede Welt deckt 100 % auf Phone/Tablet/quer, Abenteuer-Geometrie, klassische Stile zeigen Fortschritt, Konfetti, Bühnen-Regie inkl. Ruhemodus) und Audio-Tests im Timer-Controller (Start-Effekt, Stumm, Ruhemodus).
+- `flutter test`: **176 Tests grün** (vor dem Redesign-Abschluss 160; +16 neue); neu `test/premium_art_test.dart` (Rig-Logik, jede Figur × jede Emotion rendert sichtbar, Silhouetten paarweise verschieden, jede Welt deckt 100 % auf Phone/Tablet/quer, Abenteuer-Geometrie, klassische Stile zeigen Fortschritt, Konfetti, Bühnen-Regie inkl. Ruhemodus) und Audio-Tests im Timer-Controller (Start-Effekt, Stumm, Ruhemodus).
 - Timer-Logik mit Unterbrechungen: bestehende Engine-/Controller-Tests (Pause/Resume, Hintergrund, Neustart, beschädigter Snapshot) unverändert grün.
 - Performance (Dart-Aufzeichnungszeit pro Bild, CPU des Build-Containers, **kein** GPU-Rastern): Welten 0,04–0,71 ms, Figuren 0,12–0,35 ms, Diorama 0,29 ms (`test/tools/perf_bench_test.dart`). Echtes Geräte-Profiling steht aus.
 - Visuelle Prüfung: Renderings auf 440×956, 360×640, iPad 1032×1376; Vorher/Nachher in `docs/redesign/`.

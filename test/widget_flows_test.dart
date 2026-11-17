@@ -165,8 +165,8 @@ void main() {
       expect(find.textContaining('4,99'), findsNothing);
       expect(find.textContaining('freischalten'), findsNothing);
       await t.scrollUntilVisible(
-        find.text('Drache Funki'),
-        300,
+        find.text('Drache Funki').hitTestable(),
+        100,
         scrollable: _vertical.first,
       );
       await t.tap(find.text('Drache Funki'));
@@ -202,8 +202,8 @@ void main() {
     final env = await boot(t, pro: true, home: const PickerScreen());
     expect(find.byIcon(Icons.lock_rounded), findsNothing);
     await t.scrollUntilVisible(
-      find.text('Drache Funki'),
-      300,
+      find.text('Drache Funki').hitTestable(),
+      100,
       scrollable: _vertical.first,
     );
     await t.tap(find.text('Drache Funki'));
@@ -239,6 +239,7 @@ void main() {
       await t.pump();
       expect(find.text('Pro freischalten – 4,99 €'), findsOneWidget);
       expect(find.textContaining('Kein Abo'), findsWidgets);
+      await t.ensureVisible(find.text('Pro freischalten – 4,99 €'));
       await t.tap(find.text('Pro freischalten – 4,99 €'));
       await t.pump();
       expect(env.store.bought, [proProductId]);
