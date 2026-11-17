@@ -357,3 +357,137 @@ double pulse(double t, double start, double dur) {
   if (x < 0 || x > 1) return 0;
   return math.sin(x * math.pi);
 }
+
+/// Plüschiges Teil in einem Zug: Volumen, Fellstriche, flauschiger Rand.
+void plush(
+  Canvas c,
+  Path shape,
+  Color base, {
+  Color? light,
+  Color? dark,
+  double lightAmt = 0.12,
+  double shadowAmt = 0.18,
+  double Function(Offset p)? flow,
+  int fur = 260,
+  double furLen = 0.08,
+  int seed = 1,
+  double fringe = 0.05,
+  double fringeSpacing = 0.05,
+  double fringeWidth = 0.06,
+  Color? fringeColor,
+  Color? fringeTip,
+  bool Function(Offset p)? skipFringe,
+  double furAlpha = 0.3,
+}) {
+  fillVolume(c, shape, base, light: lightAmt, shadow: shadowAmt);
+  if (fur > 0) {
+    final ctr = shape.getBounds().center;
+    furTexture(
+      c,
+      shape,
+      light: light ?? shade(base, 0.2),
+      dark: dark ?? shade(base, -0.2),
+      flow: flow ?? (p) => math.atan2(p.dy - ctr.dy, p.dx - ctr.dx),
+      count: fur,
+      len: furLen,
+      seed: seed,
+      alpha: furAlpha,
+    );
+  }
+  if (fringe > 0) {
+    furFringe(
+      c,
+      shape,
+      color: fringeColor ?? mix(base, light ?? shade(base, 0.2), 0.12),
+      tipColor: fringeTip ?? mix(base, light ?? shade(base, 0.2), 0.38),
+      outward: fringe,
+      spacing: fringeSpacing,
+      width: fringeWidth,
+      seed: seed + 1,
+      skip: skipFringe,
+    );
+  }
+}
+
+/// Kleine Pfoten-Zehen als weiche Linien.
+void toeLines(
+  Canvas c,
+  Offset center,
+  double spread,
+  Color color, {
+  int n = 2,
+  double len = 0.05,
+}) {
+  for (var i = 0; i < n; i++) {
+    final x = center.dx + (i - (n - 1) / 2) * spread;
+    c.drawLine(
+      Offset(x, center.dy),
+      Offset(x, center.dy + len),
+      Paint()
+        ..color = color
+        ..strokeWidth = 0.008
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+}
+
+/// Vierzackiger Funkelstern (Glanz, Stirnzeichen).
+void sparkleStar(Canvas c, Offset p, double r, Color col) {
+  final path = Path();
+  for (var i = 0; i < 8; i++) {
+    final rad = i.isEven ? r : r * 0.28;
+    final a = i * math.pi / 4 - math.pi / 2;
+    final pt = p + Offset(math.cos(a) * rad, math.sin(a) * rad * 1.15);
+    i == 0 ? path.moveTo(pt.dx, pt.dy) : path.lineTo(pt.dx, pt.dy);
+  }
+  c.drawPath(path..close(), Paint()..color = col.withValues(alpha: 0.95));
+}
+
+/// Gefiederschuppen: Reihen überlappender Halbbögen (Papagei).
+void featherScales(
+  Canvas c,
+  Path clip, {
+  required Color base,
+  required Color edge,
+  double size = 0.07,
+  int seed = 1,
+  double alpha = 0.55,
+}) {
+  final b = clip.getBounds();
+  final rnd = Rng(seed);
+  c.save();
+  c.clipPath(clip);
+  var row = 0;
+  for (var y = b.top; y < b.bottom + size; y += size * 0.62) {
+    final off = row.isEven ? 0.0 : size * 0.5;
+    for (var x = b.left - size; x < b.right + size; x += size) {
+      final p = Offset(x + off, y);
+      final path = Path()
+        ..moveTo(p.dx - size * 0.5, p.dy)
+        ..quadraticBezierTo(p.dx, p.dy + size * 0.95, p.dx + size * 0.5, p.dy);
+      c.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = size * 0.1
+          ..color = edge.withValues(alpha: alpha * rnd.range(0.7, 1.0)),
+      );
+      c.drawPath(
+        Path()
+          ..moveTo(p.dx - size * 0.4, p.dy + size * 0.12)
+          ..quadraticBezierTo(
+            p.dx,
+            p.dy + size * 0.5,
+            p.dx + size * 0.4,
+            p.dy + size * 0.12,
+          ),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = size * 0.07
+          ..color = base.withValues(alpha: 0.35),
+      );
+    }
+    row++;
+  }
+  c.restore();
+}

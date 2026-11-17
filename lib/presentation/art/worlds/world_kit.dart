@@ -73,7 +73,12 @@ Paint vgrad(Rect rect, List<Color> colors, [List<double>? stops]) => Paint()
     rect.topCenter,
     rect.bottomCenter,
     colors,
-    stops,
+    stops ??
+        (colors.length == 2
+            ? null
+            : [
+                for (var i = 0; i < colors.length; i++) i / (colors.length - 1),
+              ]),
   );
 
 /// Weiche Wolke aus überlappenden Kugeln mit Licht oben und kühlem Schatten unten.
@@ -457,4 +462,273 @@ void drawButterfly(Canvas c, double size, double flap, Color wing, Color spot) {
     Paint()..color = const Color(0xFF3A2A40),
   );
   c.restore();
+}
+
+/// Kiefer; mit [snow] bekommt jede Etage eine Schneehaube.
+void drawPine(
+  Canvas c,
+  double h, {
+  required Color leaf,
+  Color? snow,
+  int seed = 1,
+}) {
+  final rnd = Rng(seed);
+  c.drawRect(
+    Rect.fromLTWH(-h * 0.035, -h * 0.16, h * 0.07, h * 0.16),
+    Paint()..color = const Color(0xFF6E4A2C),
+  );
+  const tiers = 4;
+  for (var i = 0; i < tiers; i++) {
+    final y0 = -h * (0.12 + i * 0.2);
+    final w = h * (0.34 - i * 0.065) * (1 + rnd.next() * 0.06);
+    final top = y0 - h * 0.3;
+    final tri = Path()
+      ..moveTo(0, top)
+      ..quadraticBezierTo(w * 0.55, y0 - h * 0.12, w, y0)
+      ..quadraticBezierTo(0, y0 + h * 0.04, -w, y0)
+      ..quadraticBezierTo(-w * 0.55, y0 - h * 0.12, 0, top)
+      ..close();
+    c.drawPath(
+      tri,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset(-w, y0),
+          Offset(w, y0),
+          [shade(leaf, 0.12), leaf, shade(leaf, -0.14)],
+          const [0, 0.5, 1],
+        ),
+    );
+    if (snow != null) {
+      final cap = Path()
+        ..moveTo(0, top)
+        ..quadraticBezierTo(w * 0.28, top + h * 0.1, w * 0.52, y0 - h * 0.1)
+        ..quadraticBezierTo(w * 0.2, y0 - h * 0.05, 0, y0 - h * 0.12)
+        ..quadraticBezierTo(-w * 0.2, y0 - h * 0.05, -w * 0.52, y0 - h * 0.1)
+        ..quadraticBezierTo(-w * 0.28, top + h * 0.1, 0, top)
+        ..close();
+      c.drawPath(cap, Paint()..color = snow);
+    }
+  }
+}
+
+/// Palme mit geschwungenem Stamm und Wedeln.
+void drawPalm(Canvas c, double h, {double lean = 0.18, double sway = 0}) {
+  final trunk = Path()
+    ..moveTo(-h * 0.03, 0)
+    ..quadraticBezierTo(h * lean * 0.5, -h * 0.5, h * lean, -h)
+    ..lineTo(h * lean + h * 0.03, -h)
+    ..quadraticBezierTo(h * lean * 0.5 + h * 0.05, -h * 0.5, h * 0.03, 0)
+    ..close();
+  c.drawPath(
+    trunk,
+    Paint()
+      ..shader = ui.Gradient.linear(
+        Offset(-h * 0.05, 0),
+        Offset(h * 0.2, 0),
+        const [Color(0xFFB88A5A), Color(0xFF9A6C3E), Color(0xFF7A5230)],
+        const [0, 0.5, 1],
+      ),
+  );
+  for (var i = 1; i < 9; i++) {
+    final y = -h * i / 9;
+    final x = h * lean * math.pow(i / 9, 1.4);
+    c.drawLine(
+      Offset(x - h * 0.03, y),
+      Offset(x + h * 0.03, y + h * 0.012),
+      Paint()
+        ..color = const Color(0x44402810)
+        ..strokeWidth = h * 0.012,
+    );
+  }
+  c.save();
+  c.translate(h * lean, -h);
+  for (var i = 0; i < 7; i++) {
+    final a = -math.pi * 0.95 + i * math.pi * 0.9 / 6 + sway;
+    c.save();
+    c.rotate(a + math.pi / 2);
+    final len = h * (0.5 + 0.06 * (i % 2));
+    final leaf = Path()
+      ..moveTo(0, 0)
+      ..quadraticBezierTo(len * 0.1, -len * 0.5, len * 0.12, -len)
+      ..quadraticBezierTo(-len * 0.03, -len * 0.52, 0, 0)
+      ..close();
+    c.drawPath(
+      leaf,
+      Paint()
+        ..shader = ui.Gradient.linear(Offset.zero, Offset(0, -len), const [
+          Color(0xFF2F9A50),
+          Color(0xFF6CCB6A),
+        ]),
+    );
+    c.restore();
+  }
+  c.drawCircle(
+    const Offset(-6, 6),
+    h * 0.03,
+    Paint()..color = const Color(0xFF6A4A2A),
+  );
+  c.drawCircle(
+    const Offset(6, 8),
+    h * 0.03,
+    Paint()..color = const Color(0xFF6A4A2A),
+  );
+  c.restore();
+}
+
+/// Sternenhimmel (deterministisch); Größe und Helligkeit variieren.
+void starfield(
+  Canvas c,
+  Size s, {
+  int count = 80,
+  int seed = 1,
+  double yMax = 0.85,
+  double maxR = 0.004,
+  Color color = Colors.white,
+}) {
+  final rnd = Rng(seed);
+  for (var i = 0; i < count; i++) {
+    final p = Offset(rnd.next() * s.width, rnd.next() * s.height * yMax);
+    final r = s.shortestSide * (maxR * 0.35 + maxR * rnd.next());
+    c.drawCircle(
+      p,
+      r,
+      Paint()..color = color.withValues(alpha: 0.4 + 0.6 * rnd.next()),
+    );
+    if (rnd.next() > 0.85) glow(c, p, r * 5, color, 0.35);
+  }
+}
+
+/// Mond mit Hof, Kratern und Schattierung.
+void drawMoon(Canvas c, Offset ctr, double r) {
+  glow(c, ctr, r * 3.2, const Color(0xFFFFF0B8), 0.5);
+  c.drawCircle(
+    ctr,
+    r,
+    Paint()
+      ..shader = ui.Gradient.radial(
+        ctr + Offset(-r * 0.3, -r * 0.3),
+        r * 1.6,
+        const [Color(0xFFFFFBE6), Color(0xFFFFEFB0), Color(0xFFE8D48A)],
+        const [0, 0.55, 1],
+      ),
+  );
+  for (final k in <(double, double, double)>[
+    (-0.3, -0.2, 0.2),
+    (0.3, 0.1, 0.15),
+    (-0.1, 0.4, 0.12),
+    (0.35, -0.4, 0.1),
+  ]) {
+    final p = ctr + Offset(k.$1 * r, k.$2 * r);
+    c.drawCircle(p, k.$3 * r, Paint()..color = const Color(0x22A89050));
+    c.drawCircle(
+      p + Offset(-k.$3 * r * 0.15, -k.$3 * r * 0.15),
+      k.$3 * r * 0.75,
+      Paint()..color = const Color(0x18FFFFFF),
+    );
+  }
+}
+
+/// Planet mit Verlauf, Bändern und optionalem Ring.
+void drawPlanet(
+  Canvas c,
+  Offset ctr,
+  double r,
+  Color a,
+  Color b, {
+  bool ring = false,
+  double tilt = -0.35,
+  List<double> bands = const [],
+}) {
+  c.save();
+  c.translate(ctr.dx, ctr.dy);
+  c.rotate(tilt);
+  if (ring) {
+    c.drawArc(
+      Rect.fromCenter(center: Offset.zero, width: r * 3.4, height: r * 0.95),
+      math.pi,
+      math.pi,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = r * 0.22
+        ..color = const Color(0xFFE6D5FF).withValues(alpha: 0.85),
+    );
+  }
+  final sphere = Rect.fromCircle(center: Offset.zero, radius: r);
+  c.drawCircle(
+    Offset.zero,
+    r,
+    Paint()
+      ..shader = ui.Gradient.radial(
+        Offset(-r * 0.35, -r * 0.4),
+        r * 1.7,
+        [shade(a, 0.12), a, b],
+        const [0, 0.5, 1],
+      ),
+  );
+  c.save();
+  c.clipPath(Path()..addOval(sphere));
+  for (final y in bands) {
+    c.drawRect(
+      Rect.fromLTWH(-r, y * r - r * 0.06, r * 2, r * 0.12),
+      Paint()..color = shade(a, -0.12).withValues(alpha: 0.45),
+    );
+  }
+  // Terminator: Schatten auf der Nachtseite
+  c.drawCircle(
+    Offset(r * 0.45, r * 0.4),
+    r * 1.15,
+    Paint()
+      ..color = const Color(0x55100830)
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * 0.25),
+  );
+  c.restore();
+  if (ring) {
+    c.drawArc(
+      Rect.fromCenter(center: Offset.zero, width: r * 3.4, height: r * 0.95),
+      0,
+      math.pi,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = r * 0.22
+        ..color = const Color(0xFFF4EAFF).withValues(alpha: 0.9),
+    );
+  }
+  c.restore();
+}
+
+/// Diagonale, sanft schimmernde Lichtstrahlen.
+void lightShafts(
+  Canvas c,
+  Size s,
+  double t, {
+  required Color color,
+  int count = 6,
+  double angle = 0.35,
+  double alpha = 0.16,
+  double seed = 0,
+}) {
+  for (var i = 0; i < count; i++) {
+    final x =
+        s.width * (0.08 + i * (0.9 / count)) +
+        math.sin(t * 0.2 + i + seed) * s.width * 0.02;
+    final w = s.width * (0.05 + 0.03 * ((i * 7) % 3));
+    final a = alpha * (0.6 + 0.4 * math.sin(t * 0.5 + i * 1.7 + seed));
+    final path = Path()
+      ..moveTo(x, 0)
+      ..lineTo(x + w, 0)
+      ..lineTo(x + w - s.height * angle, s.height * 0.8)
+      ..lineTo(x - s.height * angle, s.height * 0.8)
+      ..close();
+    c.drawPath(
+      path,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset(x, 0),
+          Offset(x - s.height * angle, s.height * 0.8),
+          [color.withValues(alpha: a), color.withValues(alpha: 0)],
+        ),
+    );
+  }
 }

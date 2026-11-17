@@ -31,6 +31,11 @@ class FaceStyle {
     this.blushR = 0.075,
     this.ink = const Color(0xFF2B2440),
     this.irisScale = 0.84,
+    this.slit = false,
+    this.showNose = true,
+    this.showMouth = true,
+    this.noseOval = false,
+    this.eyeRing,
   });
 
   final double eyeGap,
@@ -46,7 +51,8 @@ class FaceStyle {
       blushR,
       irisScale;
   final Color iris, irisLight, eyeBase, lid, noseColor, blush, ink;
-  final bool lashes, sclera, cat;
+  final bool lashes, sclera, cat, slit, showNose, showMouth, noseOval;
+  final Color? eyeRing;
 }
 
 /// Zeichnet das Gesicht an der aktuellen Koordinatenursprung-Position (Kopfmitte).
@@ -56,8 +62,8 @@ void drawFace(Canvas c, FaceStyle s, Pose p, {double scale = 1}) {
   _blush(c, s, p);
   _eye(c, s, p, -1);
   _eye(c, s, p, 1);
-  _nose(c, s);
-  _mouth(c, s, p);
+  if (s.showNose) _nose(c, s);
+  if (s.showMouth) _mouth(c, s, p);
   c.restore();
 }
 
@@ -131,6 +137,16 @@ void _eye(Canvas c, FaceStyle s, Pose p, double side) {
     }
     return;
   }
+  if (s.eyeRing != null) {
+    c.drawOval(
+      Rect.fromCenter(
+        center: Offset(cx, cy),
+        width: s.eyeRx * 2.7,
+        height: s.eyeRy * 2.6,
+      ),
+      Paint()..color = s.eyeRing!,
+    );
+  }
   c.save();
   c.translate(cx, cy);
   c.scale(scale, scale * open);
@@ -184,14 +200,27 @@ void _eye(Canvas c, FaceStyle s, Pose p, double side) {
       ..color = shade(s.iris, -0.3).withValues(alpha: 0.8),
   );
   final pupilR = (mode == EyeMode.wide ? 0.34 : 0.4);
-  c.drawOval(
-    Rect.fromCenter(
-      center: ir.center,
-      width: rx * 2 * s.irisScale * pupilR * 1.1,
-      height: ry * 2 * s.irisScale * pupilR * 1.25,
-    ),
-    Paint()..color = const Color(0xFF110C20),
-  );
+  if (s.slit) {
+    // Katzenaugen: senkrechte Schlitzpupille, schmaler bei Helligkeit/Freude
+    final pw = mode == EyeMode.wide ? 0.34 : 0.2;
+    c.drawOval(
+      Rect.fromCenter(
+        center: ir.center,
+        width: rx * 2 * s.irisScale * pw,
+        height: ry * 2 * s.irisScale * 0.92,
+      ),
+      Paint()..color = const Color(0xFF110C20),
+    );
+  } else {
+    c.drawOval(
+      Rect.fromCenter(
+        center: ir.center,
+        width: rx * 2 * s.irisScale * pupilR * 1.1,
+        height: ry * 2 * s.irisScale * pupilR * 1.25,
+      ),
+      Paint()..color = const Color(0xFF110C20),
+    );
+  }
   // Glanzlichter: groß oben rechts, klein unten links, Funken
   gloss(c, off + Offset(rx * 0.34, -ry * 0.38), rx * 0.34);
   gloss(c, off + Offset(-rx * 0.3, ry * 0.42), rx * 0.15, alpha: 0.85);
@@ -239,6 +268,35 @@ void _eye(Canvas c, FaceStyle s, Pose p, double side) {
 
 void _nose(Canvas c, FaceStyle s) {
   final w = s.noseW;
+  if (s.noseOval) {
+    final r = Rect.fromCenter(
+      center: Offset(0, s.noseY),
+      width: w * 2.6,
+      height: w * 1.9,
+    );
+    c.drawOval(
+      r,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          r.center + Offset(-w * 0.4, -w * 0.4),
+          w * 1.8,
+          [shade(s.noseColor, 0.25), s.noseColor, shade(s.noseColor, -0.1)],
+          const [0, 0.5, 1],
+        ),
+    );
+    gloss(c, Offset(-w * 0.55, s.noseY - w * 0.4), w * 0.28, alpha: 0.75);
+    for (final sx in [-1.0, 1.0]) {
+      c.drawOval(
+        Rect.fromCenter(
+          center: Offset(sx * w * 0.5, s.noseY + w * 0.1),
+          width: w * 0.36,
+          height: w * 0.22,
+        ),
+        Paint()..color = const Color(0x55000000),
+      );
+    }
+    return;
+  }
   final path = Path()
     ..moveTo(-w, s.noseY - w * 0.35)
     ..quadraticBezierTo(0, s.noseY - w * 0.8, w, s.noseY - w * 0.35)
