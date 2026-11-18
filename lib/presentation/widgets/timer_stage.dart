@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -53,6 +54,12 @@ class TimerStage extends StatefulWidget {
   State<TimerStage> createState() => _TimerStageState();
 }
 
+/// Mindestabstand der Figur-Bilder im Web (≈30 Hz).
+const double _webFrame = 1 / 31;
+
+/// Hintergrund-Zeit: 15 Hz reichen für Wellen/Fähnchen.
+double _bgTime(double t) => (t * 15).floorToDouble() / 15;
+
 class _TimerStageState extends State<TimerStage>
     with SingleTickerProviderStateMixin {
   late final Ticker _ticker;
@@ -74,6 +81,8 @@ class _TimerStageState extends State<TimerStage>
       _now = t;
       _direct(t);
       if (widget.calm && (t * 4).floor() == (_t.value * 4).floor()) return;
+      // Web/iPhone: die Figur reicht mit 30 Bildern/s (stabil statt 18–20 fps).
+      if (kIsWeb && t - _t.value < _webFrame) return;
       _t.value = t;
     })..start();
   }
@@ -151,6 +160,11 @@ class _TimerStageState extends State<TimerStage>
     }
   }
 
+  Widget _bgPaint({Size? size, required CustomPainter painter}) =>
+      RepaintBoundary(
+        child: CustomPaint(size: size ?? Size.zero, painter: painter),
+      );
+
   Widget _figure(double size, double t, {double rotate = 0}) {
     final m = widget.motif;
     final child = m.spec != null
@@ -191,7 +205,8 @@ class _TimerStageState extends State<TimerStage>
               ),
             ),
           );
-    return rotate == 0 ? child : Transform.rotate(angle: rotate, child: child);
+    final boxed = RepaintBoundary(child: child);
+    return rotate == 0 ? boxed : Transform.rotate(angle: rotate, child: boxed);
   }
 
   @override
@@ -243,7 +258,7 @@ class _TimerStageState extends State<TimerStage>
         return Stack(
           alignment: Alignment.center,
           children: [
-            CustomPaint(
+            _bgPaint(
               size: size,
               painter: RingPainter(fraction: frac, color: ring),
             ),
@@ -263,9 +278,13 @@ class _TimerStageState extends State<TimerStage>
             : -math.sin(t * 6).abs() * side * 0.025;
         return Stack(
           children: [
-            CustomPaint(
+            _bgPaint(
               size: size,
-              painter: AdventurePainter(fraction: frac, t: t, calm: calm),
+              painter: AdventurePainter(
+                fraction: frac,
+                t: _bgTime(t),
+                calm: calm,
+              ),
             ),
             Positioned(
               left: pos.dx - fs / 2,
@@ -282,11 +301,11 @@ class _TimerStageState extends State<TimerStage>
         final bob = calm ? 0.0 : math.sin(t * 2) * 4;
         return Stack(
           children: [
-            CustomPaint(
+            _bgPaint(
               size: size,
               painter: FillPainter(
                 fraction: frac,
-                t: t,
+                t: _bgTime(t),
                 color: ring,
                 calm: calm,
               ),
@@ -306,9 +325,9 @@ class _TimerStageState extends State<TimerStage>
         return Stack(
           alignment: Alignment.center,
           children: [
-            CustomPaint(
+            _bgPaint(
               size: size,
-              painter: RainbowPainter(fraction: frac, t: t),
+              painter: RainbowPainter(fraction: frac, t: _bgTime(t)),
             ),
             Positioned(bottom: side * 0.04, child: _figure(side * 0.42, t)),
             if (widget.countdown != null) _countdown(side),
@@ -317,9 +336,13 @@ class _TimerStageState extends State<TimerStage>
       case TimerStyle.hourglass:
         return Stack(
           children: [
-            CustomPaint(
+            _bgPaint(
               size: size,
-              painter: HourglassPainter(fraction: frac, t: t, calm: calm),
+              painter: HourglassPainter(
+                fraction: frac,
+                t: _bgTime(t),
+                calm: calm,
+              ),
             ),
             Positioned(
               right: 0,
@@ -340,11 +363,11 @@ class _TimerStageState extends State<TimerStage>
             Positioned.fill(
               child: Padding(
                 padding: EdgeInsets.all(side * 0.04),
-                child: CustomPaint(
+                child: _bgPaint(
                   painter: PicturePainter(
                     style: widget.style,
                     fraction: frac,
-                    t: t,
+                    t: _bgTime(t),
                     calm: calm,
                   ),
                 ),
