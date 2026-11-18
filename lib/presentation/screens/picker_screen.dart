@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -10,12 +11,26 @@ import '../painters/scene_painter.dart';
 import '../painters/picture_painters.dart';
 import '../painters/timer_painters.dart';
 import '../theme.dart';
+import '../widgets/preview_cache.dart';
 import 'pro_screen.dart';
 
 /// Auswahl für Kinder: Figur, Welt, Timer-Art, Musik.
 /// Gesperrte (Pro-)Einträge öffnen nur die Elternsicherung – nie direkt den Kauf.
-class PickerScreen extends StatelessWidget {
+class PickerScreen extends StatefulWidget {
   const PickerScreen({super.key});
+
+  @override
+  State<PickerScreen> createState() => _PickerScreenState();
+}
+
+class _PickerScreenState extends State<PickerScreen> {
+  @override
+  void dispose() {
+    // Beim Schließen nur die zuletzt benutzten Vorschauen behalten (schont Speicher der Timer-Szene)
+    PreviewCache.instance.cancelPending();
+    PreviewCache.instance.trim(14);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,12 +64,133 @@ class PickerScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: const TabBarView(
-          children: [_Characters(), _Worlds(), _Styles(), _Music()],
+        // Seiten bleiben erhalten (kein Neuaufbau/Neuzeichnen beim Zurückwechseln, Scrollposition bleibt)
+        body: const Stack(
+          children: [
+            TabBarView(
+              children: [
+                _KeepAlive(_Characters()),
+                _KeepAlive(_Worlds()),
+                _KeepAlive(_Styles()),
+                _KeepAlive(_Music()),
+              ],
+            ),
+            _WarmUp(),
+          ],
         ),
       ),
     );
   }
+}
+
+/// Wärmt kurz nach dem Öffnen unsichtbar die Welt- und Zeit-Vorschauen vor (ein Bild pro Frame),
+/// damit der erste Wechsel auf diese Tabs nichts mehr zeichnen muss. Danach wird der Teilbaum entfernt.
+class _WarmUp extends StatefulWidget {
+  const _WarmUp();
+  @override
+  State<_WarmUp> createState() => _WarmUpState();
+}
+
+class _WarmUpState extends State<_WarmUp> {
+  bool _go = false, _done = false;
+  Timer? _t;
+
+  @override
+  void initState() {
+    super.initState();
+    _t = Timer(const Duration(milliseconds: 700), () {
+      if (!mounted) return;
+      setState(() => _go = true);
+      PreviewCache.instance.pending.addListener(_check);
+    });
+  }
+
+  void _check() {
+    if (PreviewCache.instance.pending.value == 0 && mounted && _go && !_done) {
+      // Seiten sind fertig gelayoutet; sobald die Warteschlange leer ist, Teilbaum entfernen
+      Future<void>.delayed(const Duration(milliseconds: 100), () {
+        if (mounted && PreviewCache.instance.pending.value == 0)
+          setState(() => _done = true);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _t?.cancel();
+    PreviewCache.instance.pending.removeListener(_check);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_go || _done) return const SizedBox.shrink();
+    return const Positioned.fill(
+      child: PreviewWarmUpScope(
+        child: Offstage(
+          child: Stack(
+            children: [
+              Positioned.fill(child: _Worlds()),
+              Positioned.fill(child: _Styles()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Hält eine Tab-Seite am Leben, solange das Menü offen ist.
+class _KeepAlive extends StatefulWidget {
+  const _KeepAlive(this.child);
+  final Widget child;
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+}
+
+/// Auswahl und Rechte ändern das Menü – der Timer-Takt nicht (früher: `d.all` inkl. Timer).
+Listenable _pickerListenable(AppDeps d) =>
+    Listenable.merge([d.settings, d.entitlements]);
+
+/// Einmal vorberechnet statt je Kachel gefiltert.
+final Map<CharacterCategory, List<CharacterSpec>> _charsByCategory = {
+  for (final cat in CharacterCategory.values)
+    cat: [
+      for (final c in characters)
+        if (c.category == cat) c,
+    ],
+};
+
+/// Kachel-Rahmen (Schatten, weiße Karte, Rand) – wird einmal gebacken statt je Bild mit
+/// Weichzeichner-Schatten und Clip gezeichnet. Maße und Farben wie zuvor.
+void _paintTileChrome(Canvas c, Size s, bool selected) {
+  const r = 24.0;
+  final rrect = RRect.fromRectAndRadius(
+    Offset.zero & s,
+    const Radius.circular(r),
+  );
+  final shadow = BoxShadow(
+    color: Brand.indigo.withValues(alpha: selected ? 0.28 : 0.08),
+    blurRadius: selected ? 16 : 8,
+    offset: const Offset(0, 4),
+  );
+  c.drawRRect(rrect.shift(shadow.offset), shadow.toPaint());
+  c.drawRRect(rrect, Paint()..color = Colors.white);
+  Border.all(
+    color: selected ? Brand.indigo : const Color(0xFFE9E4F5),
+    width: selected ? 3.5 : 1.5,
+  ).paint(c, Offset.zero & s, borderRadius: BorderRadius.circular(r));
 }
 
 class _Tile extends StatelessWidget {
@@ -77,6 +213,7 @@ class _Tile extends StatelessWidget {
     final name = m?.group(1) ?? label;
     final sub = m?.group(2);
     const r = 24.0;
+    final bw = selected ? 3.5 : 1.5; // Randbreite belegt wie zuvor Platz
     return Semantics(
       button: true,
       selected: selected,
@@ -86,121 +223,104 @@ class _Tile extends StatelessWidget {
         scale: selected ? 1.0 : 0.985,
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(r),
-            boxShadow: [
-              BoxShadow(
-                color: (selected ? Brand.indigo : const Color(0xFF3B2F7F))
-                    .withValues(alpha: selected ? 0.28 : 0.08),
-                blurRadius: selected ? 16 : 8,
-                offset: const Offset(0, 4),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // gebackener Rahmen inkl. Schatten (ragt 28 px über die Kachel hinaus)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CachedPreview(
+                  cacheKey: selected ? 'chrome|sel' : 'chrome|uns',
+                  margin: const Offset(28, 28),
+                  paint: (c, s) => _paintTileChrome(c, s, selected),
+                ),
               ),
-            ],
-          ),
-          child: Material(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(r),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: onTap,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(r),
-                        border: Border.all(
-                          color: selected
-                              ? Brand.indigo
-                              : const Color(0xFFE9E4F5),
-                          width: selected ? 3.5 : 1.5,
-                        ),
-                      ),
-                      padding: const EdgeInsets.fromLTRB(6, 6, 6, 8),
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(r - 8),
-                                gradient: const RadialGradient(
-                                  center: Alignment(0, -0.2),
-                                  radius: 0.9,
-                                  colors: [
-                                    Color(0xFFFFFFFF),
-                                    Color(0xFFF1ECFF),
-                                  ],
-                                ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(4),
-                                child: Opacity(
-                                  opacity: locked ? 0.6 : 1,
-                                  child: child,
-                                ),
+            ),
+            Positioned.fill(
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(r),
+                  onTap: onTap,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      6 + bw,
+                      6 + bw,
+                      6 + bw,
+                      8 + bw,
+                    ),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(r - 8),
+                              gradient: const RadialGradient(
+                                center: Alignment(0, -0.2),
+                                radius: 0.9,
+                                colors: [Color(0xFFFFFFFF), Color(0xFFF1ECFF)],
                               ),
                             ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: child,
+                            ),
                           ),
-                          const SizedBox(height: 5),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            height: 1.1,
+                          ),
+                        ),
+                        if (sub != null)
                           Text(
-                            name,
+                            sub,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 14,
-                              height: 1.1,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11.5,
+                              height: 1.2,
+                              color: Color(0xFF6B6488),
                             ),
                           ),
-                          if (sub != null)
-                            Text(
-                              sub,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 11.5,
-                                height: 1.2,
-                                color: Color(0xFF6B6488),
-                              ),
-                            ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
-                  if (selected)
-                    const Positioned(
-                      top: 8,
-                      right: 8,
-                      child: CircleAvatar(
-                        radius: 13,
-                        backgroundColor: Brand.indigo,
-                        child: Icon(
-                          Icons.check_rounded,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  if (locked)
-                    const Positioned(
-                      top: 8,
-                      right: 8,
-                      child: CircleAvatar(
-                        radius: 13,
-                        backgroundColor: Brand.sun,
-                        child: Icon(
-                          Icons.lock_rounded,
-                          size: 16,
-                          color: Brand.ink,
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               ),
             ),
-          ),
+            if (selected)
+              const Positioned(
+                top: 8,
+                right: 8,
+                child: CircleAvatar(
+                  radius: 13,
+                  backgroundColor: Brand.indigo,
+                  child: Icon(
+                    Icons.check_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            if (locked)
+              const Positioned(
+                top: 8,
+                right: 8,
+                child: CircleAvatar(
+                  radius: 13,
+                  backgroundColor: Brand.sun,
+                  child: Icon(Icons.lock_rounded, size: 16, color: Brand.ink),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -221,7 +341,7 @@ class _Characters extends StatelessWidget {
   Widget build(BuildContext context) {
     final d = AppScope.of(context);
     return ListenableBuilder(
-      listenable: d.all,
+      listenable: _pickerListenable(d),
       builder: (context, _) {
         final sel = d.settings.profile.characterId;
         return CustomScrollView(
@@ -265,11 +385,9 @@ class _Characters extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 sliver: SliverGrid.builder(
                   gridDelegate: _grid(130),
-                  itemCount: characters.where((c) => c.category == cat).length,
+                  itemCount: _charsByCategory[cat]!.length,
                   itemBuilder: (_, i) {
-                    final c = characters
-                        .where((c) => c.category == cat)
-                        .toList()[i];
+                    final c = _charsByCategory[cat]![i];
                     final locked = c.pro && !d.isPro;
                     return _Tile(
                       selected: sel == c.id,
@@ -280,7 +398,16 @@ class _Characters extends StatelessWidget {
                           : d.settings.updateProfile(
                               (p) => p.copyWith(characterId: c.id),
                             ),
-                      child: CharacterView(spec: c),
+                      child: CachedPreview(
+                        cacheKey: 'char:${c.id}',
+                        margin: const Offset(
+                          14,
+                          14,
+                        ), // Überhang (Funkeln, Schatten) bleibt erhalten
+                        opacity: locked ? 0.6 : 1,
+                        paint: (cv, sz) =>
+                            CharacterPainter(c, shadow: false).paint(cv, sz),
+                      ),
                     );
                   },
                 ),
@@ -316,7 +443,7 @@ class _Worlds extends StatelessWidget {
   Widget build(BuildContext context) {
     final d = AppScope.of(context);
     return ListenableBuilder(
-      listenable: d.all,
+      listenable: _pickerListenable(d),
       builder: (context, _) => GridView.builder(
         padding: const EdgeInsets.all(12),
         gridDelegate: _grid(180),
@@ -333,12 +460,19 @@ class _Worlds extends StatelessWidget {
                 : d.settings.updateProfile(
                     (p) => p.copyWith(backgroundId: b.id),
                   ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: CustomPaint(
-                painter: ScenePainter(b, calm: true),
-                size: Size.infinite,
-              ),
+            child: CachedPreview(
+              cacheKey: 'world:${b.id}',
+              opacity: locked ? 0.6 : 1,
+              paint: (cv, sz) {
+                // gerundete Ecken wie zuvor (ClipRRect 14), einmal mitgebacken
+                cv.clipRRect(
+                  RRect.fromRectAndRadius(
+                    Offset.zero & sz,
+                    const Radius.circular(14),
+                  ),
+                );
+                ScenePainter(b, calm: true).paint(cv, sz);
+              },
             ),
           );
         },
@@ -353,7 +487,7 @@ class _Styles extends StatelessWidget {
   Widget build(BuildContext context) {
     final d = AppScope.of(context);
     return ListenableBuilder(
-      listenable: d.all,
+      listenable: _pickerListenable(d),
       builder: (context, _) => GridView.builder(
         padding: const EdgeInsets.all(12),
         gridDelegate: _grid(180),
@@ -368,7 +502,15 @@ class _Styles extends StatelessWidget {
             onTap: () => locked
                 ? openPro(context)
                 : d.settings.updateProfile((p) => p.copyWith(style: s)),
-            child: CustomPaint(painter: _StylePreview(s), size: Size.infinite),
+            child: CachedPreview(
+              cacheKey: 'style:${s.name}',
+              margin: const Offset(
+                20,
+                20,
+              ), // Diorama/Schatten ragen über das Quadrat hinaus
+              opacity: locked ? 0.6 : 1,
+              paint: (cv, sz) => _StylePreview(s).paint(cv, sz),
+            ),
           );
         },
       ),
@@ -439,7 +581,7 @@ class _Music extends StatelessWidget {
     final d = AppScope.of(context);
     final tracks = sounds.where((s) => s.kind == SoundKind.music).toList();
     return ListenableBuilder(
-      listenable: d.all,
+      listenable: _pickerListenable(d),
       builder: (context, _) => ListView(
         padding: const EdgeInsets.all(12),
         children: [
