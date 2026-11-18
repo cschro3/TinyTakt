@@ -53,7 +53,7 @@ Ein Fund beim Vergleich: Einige Painter (Adventure-Diorama, Schatten) zeichnen *
 Bildspeicher des Menü-Caches nach vollem Vorwärmen (RGBA, Test `test/tools/picker_mem_test.dart`): **dpr 2: 36,5 MB (130 Bilder)**, **dpr 3: begrenzt auf ≈ 48 MB (71 Bilder, Vorwärm-Budget)**; sichtbare Bilder dürfen bis 64 MB wachsen. Weiter hinten liegende Figuren werden bei Bedarf einmal gebacken. Ohne Budget bräuchte dpr 3 ≈ 80 MB. Beim Schließen: Kürzung auf ≈ 14 MB. Zusätzlich liegt die Timer-Szene (≈ 19 MB Texturen bei dpr 3) im Hintergrund.
 
 ## 7. Tests
-`flutter analyze` ohne Befunde; `flutter test`: **226 Tests** grün (neu `test/picker_perf_test.dart`, 12 Tests: Cache-Verhalten (einmal backen, Rand, LRU/MB-Limit, Klone), Vorwärmen nur bei Ruhe/je Frame/Budget, **Pixel-Gleichheit gebacken = direkt (≥ 45 dB)**, Kachel-Bilder, Antippen backt nichts mehr, Keep-Alive/Scrollposition, Menü ignoriert Timer-Meldungen, alle Tabs und Schlösser).
+`flutter analyze` ohne Befunde; `flutter test`: **225 Tests** grün (neu `test/picker_perf_test.dart`, 12 Tests: Cache-Verhalten (einmal backen, Rand, LRU/MB-Limit, Klone), Vorwärmen nur bei Ruhe/je Frame/Budget, **Pixel-Gleichheit gebacken = direkt (≥ 45 dB)**, Kachel-Bilder, Antippen backt nichts mehr, Keep-Alive/Scrollposition, Menü ignoriert Timer-Meldungen, alle Tabs und Schlösser).
 
 ## 8. Auf dem iPhone prüfen
 Staging mit **`?perf=1`** öffnen, Timer-Szene laden, oben links das Menü öffnen und durch die Tabs wischen/tippen. Das Overlay (oben links, auf der Timer-Seite darunter) zeigt Bilder/s; die Backkosten stehen in den Dart-Zeilen (`bake:char` usw., Millisekunden). Bitte Screenshot der Zahlen.
