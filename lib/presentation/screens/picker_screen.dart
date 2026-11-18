@@ -349,7 +349,9 @@ class _Characters extends StatelessWidget {
       builder: (context, _) {
         final sel = d.settings.profile.characterId;
         return CustomScrollView(
-          cacheExtent: eager ? 200000 : null,
+          scrollCacheExtent: eager
+              ? const ScrollCacheExtent.pixels(200000)
+              : null,
           slivers: [
             if (d.isPro && d.settings.customMotifs.isNotEmpty) ...[
               SliverToBoxAdapter(
