@@ -166,7 +166,8 @@ Listenable _pickerListenable(AppDeps d) =>
     Listenable.merge([d.settings, d.entitlements]);
 
 /// Der Vorschau-Bereich ist im gewählten Zustand 4 px kleiner (dickerer Rand) – diese Größe wird
-/// bei Ruhe vorab gebacken, damit das Antippen nichts mehr zeichnen muss.
+/// bei Ruhe vorab gebacken, damit das Antippen einer Figur nichts mehr zeichnen muss (nur Figuren:
+/// häufigste Aktion; Welten/Stile sind wenige und würden nur Hintergrundarbeit verursachen).
 Offset _altSizeDelta(bool selected) =>
     selected ? const Offset(4, 4) : const Offset(-4, -4);
 
@@ -521,11 +522,10 @@ class _Styles extends StatelessWidget {
                 : d.settings.updateProfile((p) => p.copyWith(style: s)),
             child: CachedPreview(
               cacheKey: 'style:${s.name}',
-              alsoBakeDelta: _altSizeDelta(d.settings.profile.style == s),
               margin: const Offset(
-                20,
-                20,
-              ), // Diorama/Schatten ragen über das Quadrat hinaus
+                10,
+                10,
+              ), // Diorama/Schatten ragen etwas hinaus
               opacity: locked ? 0.6 : 1,
               paint: (cv, sz) => _StylePreview(s).paint(cv, sz),
             ),

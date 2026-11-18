@@ -1,5 +1,5 @@
 {
- "base": [
+ "base_sofort": [
   {
    "label": "base",
    "dpr": 2,
@@ -220,195 +220,122 @@
    ]
   }
  ],
- "new": [
+ "neu_sofort": [
   {
    "label": "new",
    "dpr": 2,
    "idle": {
-    "frames": 10,
-    "fps": 3.4,
-    "p50": 233,
-    "p95": 1167,
-    "max": 1167
+    "frames": 24,
+    "fps": 12.3,
+    "p50": 67,
+    "p95": 167,
+    "max": 167
    },
    "scroll_down": {
-    "frames": 186,
-    "fps": 23.5,
+    "frames": 162,
+    "fps": 21.4,
     "p50": 17,
-    "p95": 117,
-    "max": 683
+    "p95": 150,
+    "max": 317
    },
    "scroll_up": {
-    "frames": 346,
-    "fps": 39.8,
+    "frames": 262,
+    "fps": 30.2,
     "p50": 17,
-    "p95": 50,
-    "max": 67
+    "p95": 67,
+    "max": 217
    },
    "tabs": {
-    "frames": 716,
-    "fps": 49.6,
+    "frames": 570,
+    "fps": 38.3,
     "p50": 17,
-    "p95": 50,
-    "max": 117
-   },
-   "tap": {
-    "frames": 48,
-    "fps": 32.4,
-    "p50": 17,
-    "p95": 50,
-    "max": 333
-   },
-   "tabSwitchMaxMs": [
-    [
-     "Welt",
-     100
-    ],
-    [
-     "Zeit",
-     117
-    ],
-    [
-     "Musik",
-     100
-    ],
-    [
-     "Figur",
-     50
-    ],
-    [
-     "Welt",
-     67
-    ],
-    [
-     "Figur",
-     67
-    ],
-    [
-     "Zeit",
-     67
-    ],
-    [
-     "Figur",
-     67
-    ]
-   ]
-  },
-  {
-   "label": "new",
-   "dpr": 2,
-   "idle": {
-    "frames": 11,
-    "fps": 3.7,
-    "p50": 200,
-    "p95": 1000,
-    "max": 1000
-   },
-   "scroll_down": {
-    "frames": 189,
-    "fps": 25.5,
-    "p50": 17,
-    "p95": 100,
-    "max": 200
-   },
-   "scroll_up": {
-    "frames": 348,
-    "fps": 40.1,
-    "p50": 17,
-    "p95": 50,
-    "max": 67
-   },
-   "tabs": {
-    "frames": 711,
-    "fps": 49.3,
-    "p50": 17,
-    "p95": 50,
-    "max": 117
-   },
-   "tap": {
-    "frames": 45,
-    "fps": 30.3,
-    "p50": 17,
-    "p95": 50,
-    "max": 367
-   },
-   "tabSwitchMaxMs": [
-    [
-     "Welt",
-     117
-    ],
-    [
-     "Zeit",
-     83
-    ],
-    [
-     "Musik",
-     100
-    ],
-    [
-     "Figur",
-     84
-    ],
-    [
-     "Welt",
-     67
-    ],
-    [
-     "Figur",
-     67
-    ],
-    [
-     "Zeit",
-     67
-    ],
-    [
-     "Figur",
-     67
-    ]
-   ]
-  },
-  {
-   "label": "new",
-   "dpr": 2,
-   "idle": {
-    "frames": 10,
-    "fps": 3.5,
-    "p50": 250,
-    "p95": 1083,
-    "max": 1083
-   },
-   "scroll_down": {
-    "frames": 196,
-    "fps": 24.8,
-    "p50": 17,
-    "p95": 117,
-    "max": 567
-   },
-   "scroll_up": {
-    "frames": 352,
-    "fps": 40.5,
-    "p50": 17,
-    "p95": 50,
-    "max": 67
-   },
-   "tabs": {
-    "frames": 715,
-    "fps": 49.5,
-    "p50": 17,
-    "p95": 50,
-    "max": 133
+    "p95": 67,
+    "max": 183
    },
    "tap": {
     "frames": 46,
-    "fps": 31,
+    "fps": 30.7,
     "p50": 17,
-    "p95": 67,
-    "max": 367
+    "p95": 50,
+    "max": 383
    },
    "tabSwitchMaxMs": [
     [
      "Welt",
-     117
+     133
+    ],
+    [
+     "Zeit",
+     150
+    ],
+    [
+     "Musik",
+     150
+    ],
+    [
+     "Figur",
+     67
+    ],
+    [
+     "Welt",
+     67
+    ],
+    [
+     "Figur",
+     67
+    ],
+    [
+     "Zeit",
+     67
+    ],
+    [
+     "Figur",
+     67
+    ]
+   ]
+  },
+  {
+   "label": "new",
+   "dpr": 2,
+   "idle": {
+    "frames": 24,
+    "fps": 11.3,
+    "p50": 67,
+    "p95": 183,
+    "max": 217
+   },
+   "scroll_down": {
+    "frames": 161,
+    "fps": 22.5,
+    "p50": 17,
+    "p95": 167,
+    "max": 367
+   },
+   "scroll_up": {
+    "frames": 248,
+    "fps": 28.6,
+    "p50": 17,
+    "p95": 67,
+    "max": 217
+   },
+   "tabs": {
+    "frames": 548,
+    "fps": 36.6,
+    "p50": 17,
+    "p95": 67,
+    "max": 183
+   },
+   "tap": {
+    "frames": 45,
+    "fps": 31,
+    "p50": 17,
+    "p95": 67,
+    "max": 383
+   },
+   "tabSwitchMaxMs": [
+    [
+     "Welt",
+     167
     ],
     [
      "Zeit",
@@ -420,6 +347,375 @@
     ],
     [
      "Figur",
+     133
+    ],
+    [
+     "Welt",
+     67
+    ],
+    [
+     "Figur",
+     67
+    ],
+    [
+     "Zeit",
+     67
+    ],
+    [
+     "Figur",
+     67
+    ]
+   ]
+  },
+  {
+   "label": "new",
+   "dpr": 2,
+   "idle": {
+    "frames": 24,
+    "fps": 12.1,
+    "p50": 67,
+    "p95": 183,
+    "max": 200
+   },
+   "scroll_down": {
+    "frames": 158,
+    "fps": 22,
+    "p50": 17,
+    "p95": 133,
+    "max": 317
+   },
+   "scroll_up": {
+    "frames": 253,
+    "fps": 29.2,
+    "p50": 17,
+    "p95": 67,
+    "max": 217
+   },
+   "tabs": {
+    "frames": 557,
+    "fps": 37.3,
+    "p50": 17,
+    "p95": 67,
+    "max": 217
+   },
+   "tap": {
+    "frames": 44,
+    "fps": 30,
+    "p50": 17,
+    "p95": 67,
+    "max": 350
+   },
+   "tabSwitchMaxMs": [
+    [
+     "Welt",
+     100
+    ],
+    [
+     "Zeit",
+     133
+    ],
+    [
+     "Musik",
+     150
+    ],
+    [
+     "Figur",
+     83
+    ],
+    [
+     "Welt",
+     67
+    ],
+    [
+     "Figur",
+     67
+    ],
+    [
+     "Zeit",
+     83
+    ],
+    [
+     "Figur",
+     67
+    ]
+   ]
+  }
+ ],
+ "base_eingeschwungen": [
+  {
+   "label": "base_settled",
+   "dpr": 2,
+   "idle": {
+    "frames": 179,
+    "fps": 60,
+    "p50": 17,
+    "p95": 17,
+    "max": 17
+   },
+   "scroll_down": {
+    "frames": 188,
+    "fps": 25.8,
+    "p50": 17,
+    "p95": 117,
+    "max": 850
+   },
+   "scroll_up": {
+    "frames": 182,
+    "fps": 16.2,
+    "p50": 17,
+    "p95": 133,
+    "max": 950
+   },
+   "tabs": {
+    "frames": 150,
+    "fps": 8.3,
+    "p50": 17,
+    "p95": 900,
+    "max": 2200
+   },
+   "tap": {
+    "frames": 2,
+    "fps": 1.1,
+    "p50": 917,
+    "p95": 917,
+    "max": 917
+   },
+   "tabSwitchMaxMs": [
+    [
+     "Welt",
+     933
+    ],
+    [
+     "Zeit",
+     1183
+    ],
+    [
+     "Musik",
+     250
+    ],
+    [
+     "Figur",
+     850
+    ],
+    [
+     "Welt",
+     867
+    ],
+    [
+     "Figur",
+     950
+    ],
+    [
+     "Zeit",
+     883
+    ],
+    [
+     "Figur",
+     1367
+    ]
+   ]
+  },
+  {
+   "label": "base_settled",
+   "dpr": 2,
+   "idle": {
+    "frames": 179,
+    "fps": 60,
+    "p50": 17,
+    "p95": 17,
+    "max": 17
+   },
+   "scroll_down": {
+    "frames": 185,
+    "fps": 25.8,
+    "p50": 17,
+    "p95": 117,
+    "max": 800
+   },
+   "scroll_up": {
+    "frames": 190,
+    "fps": 16.3,
+    "p50": 17,
+    "p95": 133,
+    "max": 950
+   },
+   "tabs": {
+    "frames": 144,
+    "fps": 8.1,
+    "p50": 17,
+    "p95": 933,
+    "max": 2150
+   },
+   "tap": {
+    "frames": 2,
+    "fps": 1.1,
+    "p50": 883,
+    "p95": 883,
+    "max": 883
+   },
+   "tabSwitchMaxMs": [
+    [
+     "Welt",
+     933
+    ],
+    [
+     "Zeit",
+     1150
+    ],
+    [
+     "Musik",
+     217
+    ],
+    [
+     "Figur",
+     900
+    ],
+    [
+     "Welt",
+     933
+    ],
+    [
+     "Figur",
+     933
+    ],
+    [
+     "Zeit",
+     933
+    ],
+    [
+     "Figur",
+     1233
+    ]
+   ]
+  }
+ ],
+ "neu_eingeschwungen": [
+  {
+   "label": "new_settled",
+   "dpr": 2,
+   "idle": {
+    "frames": 179,
+    "fps": 60,
+    "p50": 17,
+    "p95": 17,
+    "max": 17
+   },
+   "scroll_down": {
+    "frames": 200,
+    "fps": 29.1,
+    "p50": 17,
+    "p95": 67,
+    "max": 100
+   },
+   "scroll_up": {
+    "frames": 254,
+    "fps": 27.7,
+    "p50": 17,
+    "p95": 67,
+    "max": 650
+   },
+   "tabs": {
+    "frames": 588,
+    "fps": 38.8,
+    "p50": 17,
+    "p95": 67,
+    "max": 567
+   },
+   "tap": {
+    "frames": 53,
+    "fps": 35.3,
+    "p50": 17,
+    "p95": 67,
+    "max": 100
+   },
+   "tabSwitchMaxMs": [
+    [
+     "Welt",
+     567
+    ],
+    [
+     "Zeit",
+     333
+    ],
+    [
+     "Musik",
+     117
+    ],
+    [
+     "Figur",
+     50
+    ],
+    [
+     "Welt",
+     83
+    ],
+    [
+     "Figur",
+     67
+    ],
+    [
+     "Zeit",
+     67
+    ],
+    [
+     "Figur",
+     67
+    ]
+   ]
+  },
+  {
+   "label": "new_settled",
+   "dpr": 2,
+   "idle": {
+    "frames": 179,
+    "fps": 60,
+    "p50": 17,
+    "p95": 17,
+    "max": 17
+   },
+   "scroll_down": {
+    "frames": 189,
+    "fps": 27.5,
+    "p50": 17,
+    "p95": 67,
+    "max": 133
+   },
+   "scroll_up": {
+    "frames": 255,
+    "fps": 27.5,
+    "p50": 17,
+    "p95": 67,
+    "max": 700
+   },
+   "tabs": {
+    "frames": 579,
+    "fps": 38,
+    "p50": 17,
+    "p95": 67,
+    "max": 533
+   },
+   "tap": {
+    "frames": 46,
+    "fps": 31.4,
+    "p50": 17,
+    "p95": 83,
+    "max": 133
+   },
+   "tabSwitchMaxMs": [
+    [
+     "Welt",
+     533
+    ],
+    [
+     "Zeit",
+     350
+    ],
+    [
+     "Musik",
+     117
+    ],
+    [
+     "Figur",
      67
     ],
     [
@@ -436,7 +732,7 @@
     ],
     [
      "Figur",
-     83
+     67
     ]
    ]
   }
@@ -585,79 +881,6 @@
     [
      "Figur",
      17
-    ]
-   ]
-  },
-  {
-   "label": "new_dpr1",
-   "dpr": 1,
-   "idle": {
-    "frames": 12,
-    "fps": 4,
-    "p50": 183,
-    "p95": 1033,
-    "max": 1033
-   },
-   "scroll_down": {
-    "frames": 362,
-    "fps": 50.2,
-    "p50": 17,
-    "p95": 33,
-    "max": 150
-   },
-   "scroll_up": {
-    "frames": 512,
-    "fps": 59.1,
-    "p50": 17,
-    "p95": 17,
-    "max": 33
-   },
-   "tabs": {
-    "frames": 841,
-    "fps": 58.3,
-    "p50": 17,
-    "p95": 17,
-    "max": 67
-   },
-   "tap": {
-    "frames": 70,
-    "fps": 47.2,
-    "p50": 17,
-    "p95": 17,
-    "max": 317
-   },
-   "tabSwitchMaxMs": [
-    [
-     "Welt",
-     67
-    ],
-    [
-     "Zeit",
-     67
-    ],
-    [
-     "Musik",
-     67
-    ],
-    [
-     "Figur",
-     17
-    ],
-    [
-     "Welt",
-     33
-    ],
-    [
-     "Figur",
-     17
-    ],
-    [
-     "Zeit",
-     17
-    ],
-    [
-     "Figur",
-     33
     ]
    ]
   }

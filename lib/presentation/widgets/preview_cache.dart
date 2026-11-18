@@ -18,10 +18,10 @@ class PreviewCache {
   PreviewCache._();
   static final PreviewCache instance = PreviewCache._();
 
-  static const int maxEntries = 140;
+  static const int maxEntries = 220;
 
   /// Obergrenze des Bildspeichers (RGBA) in MB; älteste Einträge fliegen zuerst raus.
-  static const double maxMegabytes = 40;
+  static const double maxMegabytes = 64;
   final LinkedHashMap<String, ui.Image> _map = LinkedHashMap();
 
   /// Anzahl gebackener Bilder (Tests/Messung).
@@ -160,6 +160,8 @@ class PreviewCache {
   }
 
   void clear() {
+    cancelPending();
+    _scheduled = false;
     for (final i in _map.values) {
       i.dispose();
     }
