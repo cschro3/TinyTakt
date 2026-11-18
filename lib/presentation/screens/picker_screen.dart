@@ -83,7 +83,7 @@ class _PickerScreenState extends State<PickerScreen> {
   }
 }
 
-/// Wärmt kurz nach dem Öffnen unsichtbar die Welt- und Zeit-Vorschauen vor (ein Bild pro Frame),
+/// Wärmt kurz nach dem Öffnen unsichtbar die Welt-, Zeit- und restlichen Figuren-Vorschauen vor (ein Bild pro Frame),
 /// damit der erste Wechsel auf diese Tabs nichts mehr zeichnen muss. Danach wird der Teilbaum entfernt.
 class _WarmUp extends StatefulWidget {
   const _WarmUp();
@@ -132,6 +132,7 @@ class _WarmUpState extends State<_WarmUp> {
             children: [
               Positioned.fill(child: _Worlds()),
               Positioned.fill(child: _Styles()),
+              Positioned.fill(child: _Characters(eager: true)),
             ],
           ),
         ),
@@ -336,7 +337,10 @@ SliverGridDelegate _grid(double extent) =>
     );
 
 class _Characters extends StatelessWidget {
-  const _Characters();
+  const _Characters({this.eager = false});
+
+  /// Nur fürs Vorwärmen: alle Kacheln bauen (nicht nur die sichtbaren).
+  final bool eager;
   @override
   Widget build(BuildContext context) {
     final d = AppScope.of(context);
@@ -345,6 +349,7 @@ class _Characters extends StatelessWidget {
       builder: (context, _) {
         final sel = d.settings.profile.characterId;
         return CustomScrollView(
+          cacheExtent: eager ? 200000 : null,
           slivers: [
             if (d.isPro && d.settings.customMotifs.isNotEmpty) ...[
               SliverToBoxAdapter(

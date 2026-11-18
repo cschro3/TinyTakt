@@ -230,6 +230,60 @@ void main() {
     );
 
     testWidgets(
+      'Vorwärmen backt alle Figuren, Welten, Stile – Durchscrollen backt danach nichts mehr',
+      (t) async {
+        PreviewCache.instance.clear();
+        final b0 = PreviewCache.instance.bakes;
+        setScreen(t, const Size(393, 852), dpr: 1);
+        final env = TestEnv(pro: true);
+        await t.runAsync(env.init);
+        await t.pumpWidget(wrap(env.deps, const PickerScreen()));
+        for (var i = 0; i < 10; i++) {
+          await t.pump(const Duration(milliseconds: 16));
+        }
+        expect(
+          PreviewCache.instance.bakes - b0,
+          lessThan(40),
+        ); // zuerst nur, was zu sehen ist
+        // 700 ms Wartezeit, dann ein Bild je Frame bis die Warteschlange leer ist
+        await t.pump(const Duration(milliseconds: 800));
+        for (var i = 0; i < 500; i++) {
+          await t.pump(const Duration(milliseconds: 16));
+          if (i > 5 && PreviewCache.instance.pending.value == 0) break;
+        }
+        for (var i = 0; i < 20; i++) {
+          await t.pump(const Duration(milliseconds: 16));
+        }
+        expect(PreviewCache.instance.pending.value, 0);
+        expect(
+          PreviewCache.instance.bakes - b0,
+          greaterThanOrEqualTo(
+            characters.length + backgrounds.length + TimerStyle.values.length,
+          ),
+        );
+        final after = PreviewCache.instance.bakes;
+        final list = find
+            .byWidgetPredicate(
+              (w) => w is Scrollable && w.axis == Axis.vertical,
+            )
+            .first;
+        for (var k = 0; k < 8; k++) {
+          await t.drag(list, const Offset(0, -900));
+          for (var i = 0; i < 12; i++) {
+            await t.pump(const Duration(milliseconds: 16));
+          }
+        }
+        expect(
+          PreviewCache.instance.bakes,
+          after,
+          reason: 'alles schon im Cache',
+        );
+        await t.pumpWidget(const SizedBox());
+        env.timer.dispose();
+      },
+    );
+
+    testWidgets(
       'Tabs bleiben erhalten: Scrollposition überlebt den Tab-Wechsel',
       (t) async {
         setScreen(t, const Size(393, 852), dpr: 2);

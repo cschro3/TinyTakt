@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:ui' as ui;
 
+import '../../app/perf_monitor.dart';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -127,6 +129,7 @@ class PreviewCache {
       return hit;
     }
     try {
+      final sw = Stopwatch()..start();
       final w = ((logical.width + 2 * margin.dx) * dpr).ceil();
       final h = ((logical.height + 2 * margin.dy) * dpr).ceil();
       final rec = ui.PictureRecorder();
@@ -138,6 +141,10 @@ class PreviewCache {
       final img = pic.toImageSync(w, h);
       pic.dispose();
       bakes++;
+      PerfMonitor.instance.cost(
+        'bake:${key.split(':').first.split('|').first}',
+        sw.elapsedMicroseconds,
+      );
       _map[k] = img;
       while (_map.length > maxEntries ||
           (_map.length > 8 && megabytes > maxMegabytes)) {

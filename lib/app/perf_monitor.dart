@@ -121,6 +121,11 @@ class PerfMonitor {
       'marks': marks,
       'ladeBisSzeneMs': span('homeInit', 'staticReady'),
       'pageNowMs': pageNowMs(),
+      'costMaxUs': {
+        for (final e in _costs.entries)
+          e.key: e.value.reduce((a, b) => a > b ? a : b),
+      },
+      'costCount': {for (final e in _costs.entries) e.key: e.value.length},
       'costMeanUs': {
         for (final e in _costs.entries)
           e.key: (e.value.reduce((a, b) => a + b) / e.value.length).round(),
