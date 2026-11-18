@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -7,6 +8,7 @@ import 'package:flutter/scheduler.dart';
 
 import '../../../domain/timer_engine.dart';
 import '../../../app/perf_flags.dart';
+import '../../../app/perf_monitor.dart';
 import '../art_kit.dart';
 import '../celebration.dart';
 import '../figures/registry.dart';
@@ -15,6 +17,7 @@ import 'art_images.dart';
 import 'meadow_path.dart';
 import 'meadow_story.dart';
 import 'mira_sprite.dart';
+import 'story_quality.dart';
 
 /// Gemeinsamer Zustand von Hintergrund-Szene, Bühne und Fortschrittsleiste.
 class StoryController {
@@ -80,7 +83,24 @@ class StoryDirector {
   }
 }
 
-/// Vollbild-Szene: Blumenwiese (echtes Bild, Mesh-Wind, Licht) + Mira auf dem Weg.
+/// Von den Zeichenebenen gemeinsam gelesene Szenendaten (werden je Takt aktualisiert,
+/// ohne dass Widgets neu aufgebaut werden).
+class _SceneData {
+  double t = 0, u = 0, emotionT = 0, emotionSince = 0, dpr = 1;
+  Emotion emotion = Emotion.calm;
+  bool calm = false, running = false, finished = false;
+  StoryTier tier = StoryTier.full;
+  final Map<int, double> passedAt = {};
+  StoryGeometry? geo;
+  MeadowAmbient? ambient;
+  ui.Image? _ambientSrc;
+}
+
+/// Vollbild-Szene: Blumenwiese (echtes Bild, gebackene statische Ebene, Wind, Licht) + Mira.
+///
+/// Leistung (siehe `docs/PERFORMANCE.md`): kein Neuaufbau pro Bild, vier getrennte
+/// `RepaintBoundary`-Ebenen (statisch · Hintergrundleben · Mira · Feier), Taktung nach Stufe und
+/// Zustand (Ticker nur bei 60 Hz, sonst Timer), adaptive Qualität über [StoryGovernor].
 class StoryScene extends StatefulWidget {
   const StoryScene({
     super.key,
@@ -89,12 +109,14 @@ class StoryScene extends StatefulWidget {
     required this.fraction,
     required this.calm,
     this.breakPhase = false,
+    this.powerSave = false,
   });
   final TimerEngine engine;
   final StoryController controller;
   final double Function() fraction;
   final bool calm;
   final bool breakPhase;
+  final bool powerSave;
 
   @override
   State<StoryScene> createState() => _StorySceneState();
@@ -103,189 +125,319 @@ class StoryScene extends StatefulWidget {
 class _StorySceneState extends State<StoryScene>
     with SingleTickerProviderStateMixin {
   late final Ticker _ticker;
-  final ValueNotifier<double> _t = ValueNotifier(0);
+  Timer? _timer;
+  final Stopwatch _sw = Stopwatch()..start();
+  int _hz = 0;
+  final _SceneData _data = _SceneData();
   final StoryDirector _dir = StoryDirector();
-  final Map<int, double> _passedAt = {};
-  double _u = 0;
+  final StoryGovernor _gov = StoryGovernor();
+  final ValueNotifier<int> _miraTick = ValueNotifier(0);
+  final ValueNotifier<int> _ambientTick = ValueNotifier(0);
+  final ValueNotifier<int> _geoTick = ValueNotifier(0);
+  double _lastAmbient = -1, _lastProgress = -1;
+  late final CustomPainter _staticPainter,
+      _ambientPainter,
+      _miraPainter,
+      _celebrationPainter;
 
   @override
   void initState() {
     super.initState();
+    final pm = PerfMonitor.instance..start();
+    pm.mark('sceneInit');
     widget.controller.stageRect.addListener(_onRect);
-    _ticker = createTicker((d) {
-      final t = d.inMicroseconds / 1e6;
-      _tick(t);
-      // Ruhiger Modus: nur ca. 4 Bilder/s
-      if (widget.calm && (t * 4).floor() == (_t.value * 4).floor()) return;
-      _t.value = t;
-    })..start();
+    _gov.forceMinimal = widget.powerSave;
+    final forced = pm.forcedTier;
+    if (forced != null) {
+      _gov
+        ..tier = StoryTier.values.byName(forced)
+        ..locked = true;
+    }
+    _data.calm = widget.calm;
+    _staticPainter = _StaticPainter(_data, _geoTick);
+    _ambientPainter = _AmbientPainter(
+      _data,
+      Listenable.merge([_ambientTick, _geoTick]),
+    );
+    _miraPainter = _MiraPainter(_data, Listenable.merge([_miraTick, _geoTick]));
+    _celebrationPainter = _CelebrationPainter(_data, _miraTick);
+    _ticker = createTicker((_) => _onTick(_sw.elapsedMicroseconds / 1e6));
+    _onTick(0);
   }
 
-  void _onRect() => setState(() {});
+  @override
+  void didUpdateWidget(StoryScene old) {
+    super.didUpdateWidget(old);
+    _gov.forceMinimal = widget.powerSave;
+    if (old.calm != widget.calm || old.powerSave != widget.powerSave) {
+      _data.calm = widget.calm;
+      _onTick(_sw.elapsedMicroseconds / 1e6);
+      _geoTick.value++;
+    }
+  }
 
-  void _tick(double t) {
+  void _onRect() {
+    if (mounted) setState(() {});
+  }
+
+  bool get _visible {
+    final s = WidgetsBinding.instance.lifecycleState;
+    return s == null || s == AppLifecycleState.resumed;
+  }
+
+  void _setHz(int hz) {
+    if (hz == _hz) return;
+    _hz = hz;
+    _timer?.cancel();
+    _timer = null;
+    if (hz >= 50) {
+      if (!_ticker.isActive) _ticker.start();
+      _ticker.muted = false;
+    } else {
+      if (_ticker.isActive) _ticker.muted = true;
+      _timer = Timer.periodic(
+        Duration(microseconds: (1e6 / hz).round()),
+        (_) => _onTick(_sw.elapsedMicroseconds / 1e6),
+      );
+    }
+  }
+
+  void _onTick(double t) {
+    if (!mounted) return;
     final e = widget.engine;
+    final d = _data;
     final frac = e.status == TimerStatus.finished ? 0.0 : widget.fraction();
     _dir.update(t, e.status, frac, breakPhase: widget.breakPhase);
-    _u = (1 - frac).clamp(0.0, 1.0);
+    d
+      ..t = t
+      ..u = (1 - frac).clamp(0.0, 1.0)
+      ..emotion = _dir.emotion
+      ..emotionSince = _dir.since
+      ..emotionT = t - _dir.since
+      ..calm = widget.calm
+      ..running = e.status == TimerStatus.running && !widget.breakPhase
+      ..finished = e.status == TimerStatus.finished;
     final su = MeadowPath.instance.stationU;
     for (var i = 1; i < su.length; i++) {
-      if (_u >= su[i] - 0.002) {
-        _passedAt.putIfAbsent(i, () => t);
-      } else if (_u < su[i] - 0.02) {
-        _passedAt.remove(i);
+      if (d.u >= su[i] - 0.002) {
+        d.passedAt.putIfAbsent(i, () => t);
+      } else if (d.u < su[i] - 0.02) {
+        d.passedAt.remove(i);
       }
     }
-    if (widget.controller.progress.value != _u) {
-      widget.controller.progress.value = _u;
+    // Fortschrittsleiste nur bei sichtbarer Änderung (< 1 px) aktualisieren
+    final c = widget.controller.progress;
+    if ((d.u - _lastProgress).abs() >= 0.002 ||
+        (d.u == 0 && _lastProgress != 0) ||
+        (d.u == 1 && _lastProgress != 1)) {
+      _lastProgress = d.u;
+      c.value = d.u;
+    }
+    // Takt und Qualitätsstufe
+    final celebrating =
+        d.finished &&
+        d.emotionT >= 0 &&
+        d.emotionT <= CelebrationPainter.duration;
+    final active = d.running || celebrating || _dir.emotion != Emotion.calm;
+    final tierBefore = _gov.effective;
+    final hz = d.calm
+        ? 4
+        : StoryGovernor.sceneHz(_gov.effective, active: active);
+    _gov.evaluate(t, hz, visible: _visible);
+    d.tier = _gov.effective;
+    final pm = PerfMonitor.instance;
+    pm.tier = d.calm ? 'ruhig' : d.tier.name;
+    pm.rateHz = hz;
+    _setHz(d.calm ? 4 : StoryGovernor.sceneHz(d.tier, active: active));
+    _miraTick.value++;
+    final ahz = d.calm ? 0 : StoryGovernor.ambientHz(d.tier);
+    final tierChanged = tierBefore != d.tier;
+    if (ahz > 0 && (_lastAmbient < 0 || t - _lastAmbient >= 1 / ahz - 0.002)) {
+      _lastAmbient = t;
+      _ambientTick.value++;
+    } else if (tierChanged) {
+      _ambientTick.value++;
     }
   }
 
   @override
   void dispose() {
     widget.controller.stageRect.removeListener(_onRect);
+    _timer?.cancel();
     _ticker.dispose();
-    _t.dispose();
+    _miraTick.dispose();
+    _ambientTick.dispose();
+    _geoTick.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final imgs = ArtImages.instance;
-    final meadow = imgs.meadow, mira = imgs.mira;
-    if (meadow == null || mira == null) return const SizedBox.shrink();
+    if (imgs.meadow == null || imgs.mira == null)
+      return const SizedBox.shrink();
+    _data.dpr = MediaQuery.devicePixelRatioOf(context);
     return LayoutBuilder(
       builder: (context, c) {
         final size = Size(c.maxWidth, c.maxHeight);
         final rect = widget.controller.stageRect.value;
-        final bottom = rect != null ? rect.bottom - 62 : size.height * 0.5;
-        final geo = StoryGeometry(size, pathBottomY: bottom);
-        return ValueListenableBuilder<double>(
-          valueListenable: _t,
-          builder: (context, t, _) {
-            final finished = widget.engine.status == TimerStatus.finished;
-            final et = t - _dir.since;
-            final celebrate =
-                finished &&
-                !widget.calm &&
-                et >= 0 &&
-                et <= CelebrationPainter.duration;
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                CustomPaint(
-                  painter: MeadowBackdropPainter(
-                    image: meadow,
-                    geo: geo,
-                    t: widget.calm ? 0 : t,
-                    calm: widget.calm,
-                  ),
-                ),
-                CustomPaint(
-                  painter: _MiraLayerPainter(
-                    mira: mira,
-                    geo: geo,
-                    t: t,
-                    calm: widget.calm,
-                    u: _u,
-                    running:
-                        widget.engine.status == TimerStatus.running &&
-                        !widget.breakPhase,
-                    finished: finished,
-                    emotion: _dir.emotion,
-                    emotionT: et,
-                    passedAt: Map.of(_passedAt),
-                  ),
-                ),
-                if (celebrate)
-                  IgnorePointer(
-                    child: CustomPaint(painter: CelebrationPainter(et: et)),
-                  ),
-              ],
-            );
-          },
+        // Bis der Bühnenbereich gemeldet ist (erstes Bild), nur der Himmelsgrund – so wird die
+        // Wiese nicht erst an falscher Stelle gebacken.
+        if (rect == null) return const ColoredBox(color: Color(0xFF9BD2F5));
+        final bottom = rect.bottom - 62;
+        final old = _data.geo;
+        if (old == null ||
+            old.size != size ||
+            (old.pathBottomY - bottom).abs() > 0.5) {
+          _data.geo = StoryGeometry(size, pathBottomY: bottom);
+          _data.ambient = null;
+          _geoTick.value++;
+        }
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            RepaintBoundary(child: CustomPaint(painter: _staticPainter)),
+            RepaintBoundary(child: CustomPaint(painter: _ambientPainter)),
+            RepaintBoundary(child: CustomPaint(painter: _miraPainter)),
+            IgnorePointer(
+              child: RepaintBoundary(
+                child: CustomPaint(painter: _celebrationPainter),
+              ),
+            ),
+          ],
         );
       },
     );
   }
 }
 
-class _MiraLayerPainter extends CustomPainter {
-  _MiraLayerPainter({
-    required this.mira,
-    required this.geo,
-    required this.t,
-    required this.calm,
-    required this.u,
-    required this.running,
-    required this.finished,
-    required this.emotion,
-    required this.emotionT,
-    required this.passedAt,
-  });
-  final ui.Image mira;
-  final StoryGeometry geo;
-  final double t, u, emotionT;
-  final bool calm, running, finished;
-  final Emotion emotion;
-  final Map<int, double> passedAt;
+/// Ebene 1: die gebackene statische Wiese (einmal gerendert, danach nur ein Bild-Quad).
+class _StaticPainter extends CustomPainter {
+  _StaticPainter(this.d, Listenable repaint) : super(repaint: repaint);
+  final _SceneData d;
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (perfOff('mira')) return;
+    final geo = d.geo;
+    final imgs = ArtImages.instance;
+    final meadow = imgs.meadow;
+    if (geo == null || meadow == null) return;
+    final sw = Stopwatch()..start();
+    final scale = math.min(d.dpr, 1500 / size.width).clamp(1.0, 3.0);
+    final baked = BackdropCache.staticImage(
+      meadow,
+      imgs.meadowScale,
+      geo,
+      size,
+      scale,
+    );
+    if (baked != null) {
+      canvas.drawImageRect(
+        baked,
+        Rect.fromLTWH(0, 0, baked.width.toDouble(), baked.height.toDouble()),
+        Offset.zero & size,
+        // opak und unterste Ebene: ohne Blending (kein Lesen des Hintergrunds)
+        Paint()
+          ..filterQuality = FilterQuality.low
+          ..blendMode = BlendMode.src,
+      );
+    } else {
+      canvas.drawPicture(
+        BackdropCache.staticPicture(meadow, imgs.meadowScale, geo, size),
+      );
+    }
+    final pm = PerfMonitor.instance;
+    pm.textureMB = imgs.textureMB + BackdropCache.bakedMB;
+    pm.mark('staticReady');
+    pm.cost('static', sw.elapsedMicroseconds);
+  }
+
+  @override
+  bool shouldRepaint(_StaticPainter old) => false;
+}
+
+/// Ebene 2: Hintergrundleben (Wind, Strahlen, Glühen, Funkeln, Pollen), mit gedrosselter Rate.
+class _AmbientPainter extends CustomPainter {
+  _AmbientPainter(this.d, Listenable repaint) : super(repaint: repaint);
+  final _SceneData d;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final geo = d.geo;
+    final imgs = ArtImages.instance;
+    final meadow = imgs.meadow;
+    if (geo == null || meadow == null || d.calm) return;
+    final sw = Stopwatch()..start();
+    if (d.ambient == null || d._ambientSrc != meadow) {
+      d.ambient = MeadowAmbient(
+        geo: geo,
+        size: size,
+        src: meadow,
+        texScale: imgs.meadowScale,
+      );
+      d._ambientSrc = meadow;
+    }
+    d.ambient!.paint(canvas, d.t, tier: d.tier, calm: d.calm);
+    PerfMonitor.instance.cost('ambient', sw.elapsedMicroseconds);
+  }
+
+  @override
+  bool shouldRepaint(_AmbientPainter old) => false;
+}
+
+/// Ebene 3: Etappen-Glühen, Mira, Funken, Haustür.
+class _MiraPainter extends CustomPainter {
+  _MiraPainter(this.d, Listenable repaint) : super(repaint: repaint);
+  final _SceneData d;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final geo = d.geo;
+    final mesh = ArtImages.instance.miraMesh;
+    if (geo == null || mesh == null || perfOff('mira')) return;
+    final sw = Stopwatch()..start();
     final path = MeadowPath.instance;
     final s = geo.s;
+    final t = d.t, calm = d.calm;
     // Etappen: erreichte Sternsteine leuchten, der nächste pulsiert, frisch erreichte „platzen“ auf
     var next = -1;
     for (var i = 0; i < MeadowPath.stones.length; i++) {
       final sp = geo.toScreen(MeadowPath.stones[i]);
-      final lit = i == 0 || passedAt.containsKey(i);
+      final lit = i == 0 || d.passedAt.containsKey(i);
       final r = 46 * s * geo.depthScale(MeadowPath.stones[i].dy) / 0.325 * 0.85;
       if (lit) {
-        canvas.drawCircle(
-          sp,
-          r,
-          Paint()
-            ..blendMode = BlendMode.plus
-            ..shader = ui.Gradient.radial(sp, r, [
-              const Color(0x66FFE27A),
-              const Color(0x00FFE27A),
-            ]),
-        );
+        MeadowAmbient.paintGlow(canvas, sp, r, const Color(0xFFFFE27A), 0.4);
       } else if (next < 0) {
         next = i;
         final pulse = calm ? 0.6 : 0.5 + 0.5 * math.sin(t * 3);
-        canvas.drawCircle(
+        MeadowAmbient.paintGlow(
+          canvas,
           sp,
           r * 0.9,
-          Paint()
-            ..blendMode = BlendMode.plus
-            ..shader = ui.Gradient.radial(sp, r * 0.9, [
-              Color.fromRGBO(255, 244, 190, 0.22 + 0.25 * pulse),
-              const Color(0x00FFF4BE),
-            ]),
+          const Color(0xFFFFF4BE),
+          0.22 + 0.25 * pulse,
         );
       }
     }
     // Mira
-    final img = path.at(u);
+    final img = path.at(d.u);
     final feet = geo.toScreen(img).translate(0, 2);
     final h = 370 * s * geo.depthScale(img.dy);
     final pose = computePose(
       premiumFigures['nova_mira']!.personality,
-      emotion,
+      d.emotion,
       t,
-      emotionT,
+      d.emotionT,
       calm: calm,
     );
-    if (running && !calm) {
+    if (d.running && !calm) {
       final step = math.sin(t * 5.6).abs();
       pose.bodyDy -= step * 0.10;
       pose.squash += step < 0.18 ? 0.45 : -0.08;
       pose.lean += math.sin(t * 5.6) * 0.03;
     }
     MiraMesh.shadow(canvas, feet, h * 0.9, (-pose.bodyDy).clamp(0.0, 0.4) * 2);
-    MiraMesh.paint(canvas, mira, feet, h, pose, t, calm: calm);
+    MiraMesh.paint(canvas, mesh, feet, h, pose, t, calm: calm);
     if (!calm) {
       MiraMesh.sparkles(
         canvas,
@@ -296,53 +448,64 @@ class _MiraLayerPainter extends CustomPainter {
       );
     }
     // Aufplatzen frisch erreichter Steine
-    for (final e in passedAt.entries) {
-      final age = t - e.value;
-      if (age < 0 || age > 1.2 || calm) continue;
-      final sp = geo.toScreen(MeadowPath.stones[e.key]);
-      final k = age / 1.2;
-      canvas.drawCircle(
-        sp,
-        (16 + 60 * k) * s / 0.325,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3 * (1 - k)
-          ..color = Color.fromRGBO(255, 236, 150, 0.9 * (1 - k)),
-      );
-      for (var i = 0; i < 6; i++) {
-        final a = i * math.pi / 3 + 0.4;
-        sparkleStar(
-          canvas,
-          sp + Offset(math.cos(a), math.sin(a)) * (10 + 50 * k) * s / 0.325,
-          (7 * (1 - k)) * s / 0.325 + 1,
-          Colors.white,
+    if (!calm) {
+      for (final e in d.passedAt.entries) {
+        final age = t - e.value;
+        if (age < 0 || age > 1.2) continue;
+        final sp = geo.toScreen(MeadowPath.stones[e.key]);
+        final k = age / 1.2;
+        canvas.drawCircle(
+          sp,
+          (16 + 60 * k) * s / 0.325,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3 * (1 - k)
+            ..color = Color.fromRGBO(255, 236, 150, 0.9 * (1 - k)),
         );
+        for (var i = 0; i < 6; i++) {
+          final a = i * math.pi / 3 + 0.4;
+          sparkleStar(
+            canvas,
+            sp + Offset(math.cos(a), math.sin(a)) * (10 + 50 * k) * s / 0.325,
+            (7 * (1 - k)) * s / 0.325 + 1,
+            Colors.white,
+          );
+        }
       }
     }
     // Ziel: Haustür leuchtet, wenn Mira angekommen ist
-    if (finished) {
+    if (d.finished) {
       final door = geo.toScreen(const Offset(1030, 385));
-      final r = 80 * s;
-      canvas.drawCircle(
+      MeadowAmbient.paintGlow(
+        canvas,
         door,
-        r,
-        Paint()
-          ..blendMode = BlendMode.plus
-          ..shader = ui.Gradient.radial(door, r, [
-            Color.fromRGBO(
-              255,
-              214,
-              120,
-              0.55 + (calm ? 0 : 0.2 * math.sin(t * 3)),
-            ),
-            const Color(0x00FFD678),
-          ]),
+        80 * s,
+        const Color(0xFFFFD678),
+        0.55 + (calm ? 0 : 0.2 * math.sin(t * 3)),
       );
     }
+    PerfMonitor.instance.cost('mira', sw.elapsedMicroseconds);
   }
 
   @override
-  bool shouldRepaint(_MiraLayerPainter o) => true;
+  bool shouldRepaint(_MiraPainter old) => false;
+}
+
+/// Ebene 4: Konfetti am Ende (nur in den ersten Sekunden sichtbar).
+class _CelebrationPainter extends CustomPainter {
+  _CelebrationPainter(this.d, Listenable repaint) : super(repaint: repaint);
+  final _SceneData d;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (!d.finished || d.calm) return;
+    final et = d.emotionT;
+    if (et < 0 || et > CelebrationPainter.duration) return;
+    CelebrationPainter(et: et).paint(canvas, size);
+  }
+
+  @override
+  bool shouldRepaint(_CelebrationPainter old) => false;
 }
 
 /// Bühnen-Slot im Layout: meldet seinen Bereich, zeigt Fortschritt und Countdown

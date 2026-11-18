@@ -14,7 +14,9 @@ void main() {
     await t.runAsync(loadFonts);
     const size = Size(393, 852);
     setScreen(t, size, dpr: 3.0);
-    await t.runAsync(ArtImages.instance.ensureLoaded);
+    await t.runAsync(
+      () => ArtImages.instance.ensureLoaded(cssWidth: 393, dpr: 3),
+    );
     final env = TestEnv(pro: true);
     await t.runAsync(env.init);
     final charId = const String.fromEnvironment(
@@ -36,6 +38,11 @@ void main() {
     await env.settings.updateProfile(
       (p) => p.copyWith(characterId: charId, backgroundId: world, style: style),
     );
+    if (const bool.fromEnvironment('SLICE_CALM')) {
+      await env.settings.update(
+        (x) => x.calmMode = true,
+      ); // deterministisch, statisch
+    }
     await env.timer.setDuration(const Duration(minutes: 10));
     final key = GlobalKey();
     await t.pumpWidget(

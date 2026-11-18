@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
+
+import 'dart:async';
 
 import '../../app/deps.dart';
 import '../../app/perf_flags.dart';
+import '../../app/perf_monitor.dart';
 import '../../domain/catalog.dart';
 import '../../domain/session_plan.dart';
 import '../../domain/timer_engine.dart';
@@ -39,9 +41,12 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
+class _HomeScreenState extends State<HomeScreen> {
+  /// Takt des klassischen Hintergrunds (12 Bilder/s). Ein Timer statt eines Vsync-Tickers:
+  /// dazwischen werden keine Bilder angefordert, in der Story-Szene und im ruhigen Modus gar keine.
+  Timer? _bgTimer;
+  final Stopwatch _bgClock = Stopwatch()..start();
+  bool _bgNeeded = true;
   final ValueNotifier<double> _t = ValueNotifier(0);
   Motif? _motif;
   String? _motifFor;
@@ -50,17 +55,36 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    ArtImages.instance.ensureLoaded();
-    _ticker = createTicker((d) {
-      final t = d.inMicroseconds / 1e6;
-      // Hintergrund nur ca. 12 Bilder/s – spart Akku, wirkt ruhig.
-      if ((t * 12).floor() != (_t.value * 12).floor()) _t.value = t;
-    })..start();
+    PerfMonitor.instance.mark('homeInit');
+    final v = WidgetsBinding.instance.platformDispatcher.views.first;
+    ArtImages.instance.ensureLoaded(
+      cssWidth: v.physicalSize.width / v.devicePixelRatio,
+      dpr: v.devicePixelRatio,
+    );
+    _setBgNeeded(true);
+    // Nur Messungen (PERF_OFF=ui): Bedienelemente fehlen, der Timer startet deshalb von selbst.
+    if (perfOff('ui')) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) AppScope.of(context).timer.start();
+      });
+    }
+  }
+
+  void _setBgNeeded(bool need) {
+    _bgNeeded = need;
+    if (need && _bgTimer == null) {
+      _bgTimer = Timer.periodic(const Duration(milliseconds: 83), (_) {
+        if (_bgNeeded) _t.value = _bgClock.elapsedMicroseconds / 1e6;
+      });
+    } else if (!need) {
+      _bgTimer?.cancel();
+      _bgTimer = null;
+    }
   }
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _bgTimer?.cancel();
     _t.dispose();
     _story.dispose();
     super.dispose();
@@ -79,7 +103,14 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     final d = AppScope.of(context);
     return ListenableBuilder(
-      listenable: Listenable.merge([d.all, ArtImages.instance]),
+      // Neuaufbau nur bei strukturellen Änderungen – nicht bei jedem Sekundenwechsel
+      listenable: Listenable.merge([
+        d.settings,
+        d.entitlements,
+        d.purchases,
+        d.timer.structure,
+        ArtImages.instance,
+      ]),
       builder: (context, _) {
         final bg = effectiveBackground(d);
         // Illustrierte Story-Szene (Prototyp): Mira + Blumenwiese + Abenteuer-Timer
@@ -91,6 +122,13 @@ class _HomeScreenState extends State<HomeScreen>
             effectiveStyle(d) == TimerStyle.adventure;
         final calm =
             d.settings.calmMode || MediaQuery.of(context).disableAnimations;
+        // klassischer Hintergrund-Takt nur, wenn er sichtbar ist (nicht in Story-Szene/ruhigem Modus)
+        final needBg = !storyOn && !calm;
+        if (needBg != _bgNeeded) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _setBgNeeded(needBg);
+          });
+        }
         final timer = d.timer;
         final running = timer.isRunning || timer.isCountingDown;
         final locked = running && d.settings.lockWhileRunning;
@@ -113,6 +151,7 @@ class _HomeScreenState extends State<HomeScreen>
                   fraction: () => timer.displayFraction,
                   calm: calm,
                   breakPhase: timer.planView?.isPause ?? false,
+                  powerSave: d.settings.powerSave,
                 )
               else
                 ValueListenableBuilder<double>(
@@ -190,6 +229,7 @@ class _HomeScreenState extends State<HomeScreen>
                   },
                 ),
               ),
+              const PerfHud(),
             ],
           ),
         );
@@ -415,8 +455,9 @@ class _Controls extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Zeitanzeige – große Ziffern auf heller Fläche (Kontrast), zusätzlich gesprochene Beschreibung
-          Builder(
-            builder: (context) {
+          ListenableBuilder(
+            listenable: timer,
+            builder: (context, _) {
               final s = timer.displaySeconds;
               return Semantics(
                 label: '$label ${spokenDuration(s, de)}',
@@ -468,7 +509,14 @@ class _Controls extends StatelessWidget {
           ),
           if (pv != null) ...[
             const SizedBox(height: 10),
-            _PlanBar(view: pv, plan: timer.plan!, status: status),
+            ListenableBuilder(
+              listenable: timer,
+              builder: (context, _) {
+                final v = timer.planView, p = timer.plan;
+                if (v == null || p == null) return const SizedBox.shrink();
+                return _PlanBar(view: v, plan: p, status: timer.engine.status);
+              },
+            ),
           ],
           const SizedBox(height: 16),
           if (status == TimerStatus.finished)

@@ -117,6 +117,9 @@ class SettingsRepository extends ChangeNotifier {
   bool countdown321 = false;
   bool speech = false;
   bool calmMode = false;
+
+  /// Stromsparmodus: weniger Hintergrundbewegung (niedrigere Bildrate, keine Partikel/Wind).
+  bool powerSave = false;
   bool repeat = false;
   bool keepScreenOn = true;
   bool lockWhileRunning = true;
@@ -146,6 +149,7 @@ class SettingsRepository extends ChangeNotifier {
       countdown321 = m['countdown321'] == true;
       speech = m['speech'] == true;
       calmMode = m['calmMode'] == true;
+      powerSave = m['powerSave'] == true;
       repeat = m['repeat'] == true;
       keepScreenOn = m['keepScreenOn'] != false;
       lockWhileRunning = m['lockWhileRunning'] != false;
@@ -192,6 +196,7 @@ class SettingsRepository extends ChangeNotifier {
         'countdown321': countdown321,
         'speech': speech,
         'calmMode': calmMode,
+        'powerSave': powerSave,
         'repeat': repeat,
         'keepScreenOn': keepScreenOn,
         'lockWhileRunning': lockWhileRunning,

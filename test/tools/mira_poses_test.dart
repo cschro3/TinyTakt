@@ -50,6 +50,7 @@ void main() {
 class _P extends CustomPainter {
   _P(this.img, this.poses, this.ts);
   final ui.Image img;
+  late final MiraMeshData data = MiraMeshData(img);
   final List<Pose> poses;
   final List<double> ts;
   @override
@@ -59,7 +60,7 @@ class _P extends CustomPainter {
     for (var i = 0; i < poses.length; i++) {
       final feet = Offset(w * (i + 0.5), s.height - 40);
       MiraMesh.shadow(c, feet, 300, 0);
-      MiraMesh.paint(c, img, feet, 400, poses[i], ts[i]);
+      MiraMesh.paint(c, data, feet, 400, poses[i], ts[i]);
     }
   }
 

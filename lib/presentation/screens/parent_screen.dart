@@ -78,6 +78,17 @@ class ParentScreen extends StatelessWidget {
                     if (v) await d.audio.stopAll();
                   },
                 ),
+                SwitchListTile(
+                  title: Text(context.tr('Stromsparmodus', 'Battery saver')),
+                  subtitle: Text(
+                    context.tr(
+                      'Ruhigerer Hintergrund mit weniger Bildern pro Sekunde – schont Akku und Gerät.',
+                      'Calmer background with fewer frames per second – saves battery.',
+                    ),
+                  ),
+                  value: s.powerSave,
+                  onChanged: (v) => s.update((x) => x.powerSave = v),
+                ),
               ]),
               _Section(context.tr('Ton', 'Sound'), [
                 SwitchListTile(

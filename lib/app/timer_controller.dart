@@ -132,13 +132,30 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
     _poll = Timer.periodic(const Duration(milliseconds: 250), (_) => _tick());
   }
 
+  /// Zuletzt gemeldete Sekunden/Phase: der 250-ms-Takt meldet nur, wenn sich für die Anzeige
+  /// etwas geändert hat (sonst würde der ganze Home-Bildschirm 4× pro Sekunde neu aufgebaut).
+  /// Die Zeitgenauigkeit hängt davon nicht ab – die Engine rechnet weiter mit Ankerzeiten.
+  /// Meldet nur **strukturelle** Änderungen (Status, Countdown, Plan-Phase/-Plan, Gesamtdauer),
+  /// nicht jeden Sekundenwechsel. Der Home-Bildschirm baut sich nur darauf neu auf; nur die
+  /// Zeitanzeige und der Plan-Balken hören weiter auf jeden Tick (kleiner Sekunden-Hänger weg).
+  final TimerStructure structure = TimerStructure();
+  Object? _structKey;
+
+  int _shownSeconds = -1;
+  int? _shownStep;
+  TimerStatus? _shownStatus;
+
   void _tick() {
     if (engine.tick()) {
       _onFinished();
     } else {
       _checkStepChange();
     }
-    notifyListeners();
+    if (displaySeconds != _shownSeconds ||
+        planView?.index != _shownStep ||
+        engine.status != _shownStatus) {
+      notifyListeners();
+    }
   }
 
   /// Phasenwechsel im Lern-/Spielplan: sanfter Ton, Musik passend zur Phase.
@@ -448,12 +465,28 @@ class TimerController extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _poll?.cancel();
     _countdownTimer?.cancel();
+    structure.dispose();
     super.dispose();
   }
 
   @override
   void notifyListeners() {
-    if (!_disposed) super.notifyListeners();
+    if (_disposed) return;
+    _shownSeconds = displaySeconds;
+    _shownStep = planView?.index;
+    _shownStatus = engine.status;
+    final key = (
+      engine.status,
+      countdown,
+      planView?.index,
+      identityHashCode(settings.plan),
+      engine.totalMs,
+      finishedWhileAway,
+    );
+    final changed = key != _structKey;
+    _structKey = key;
+    super.notifyListeners();
+    if (changed) structure.ping();
   }
 }
 
@@ -473,3 +506,8 @@ TimerController buildTestController({
   languageCode: () => 'de',
   isPro: () => pro,
 );
+
+/// Meldet strukturelle Timer-Änderungen (siehe [TimerController.structure]).
+class TimerStructure extends ChangeNotifier {
+  void ping() => notifyListeners();
+}
