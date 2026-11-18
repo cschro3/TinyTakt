@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../art/visual/visual_registry.dart';
+import '../art/visual/world_visual_painter.dart';
+
 import 'dart:async';
 
 import '../../app/deps.dart';
@@ -10,6 +13,8 @@ import '../../domain/session_plan.dart';
 import '../../domain/timer_engine.dart';
 import '../art/story/art_images.dart';
 import '../art/story/story_scene.dart';
+import '../art/visual/visual_registry.dart';
+import '../art/visual/world_visual_painter.dart';
 import '../painters/character_painter.dart';
 import '../painters/scene_painter.dart';
 import '../theme.dart';
@@ -116,17 +121,23 @@ class _HomeScreenState extends State<HomeScreen> {
         // Illustrierte Story-Szene (Prototyp): Mira + Blumenwiese + Abenteuer-Timer.
         // Solange die Bilder laden, zeigt diese Konfiguration nur den Himmelsgrund (kein Aufblitzen
         // der alten Bühne); scheitert das Laden, bleibt die bisherige Bühne dauerhaft aktiv.
-        final storyWanted =
-            !ArtImages.instance.failed &&
-            d.settings.profile.characterId == 'nova_mira' &&
-            effectiveCharacter(d).id == 'nova_mira' &&
-            bg.id == 'meadow' &&
-            effectiveStyle(d) == TimerStyle.adventure;
+        // Zentrale Auflösung (VisualRegistry): jede Figur × Welt × Timer-Stil ergibt dieselbe
+        // Szene in allen Ansichten; Story-Szene und Bildhintergrund sind nicht mehr an Mira gekoppelt.
+        final character = effectiveCharacter(d);
+        final recipe = VisualRegistry.recipe(
+          character.id,
+          bg.id,
+          effectiveStyle(d),
+          assetsFailed: ArtImages.instance.failed,
+        );
+        final photoMotif = _motif?.photo != null;
+        final storyWanted = recipe.fullScreenStory && !photoMotif;
+        final imageWanted = recipe.imageBackdrop && !storyWanted;
         final storyOn = storyWanted && ArtImages.instance.ready;
         final calm =
             d.settings.calmMode || MediaQuery.of(context).disableAnimations;
         // klassischer Hintergrund-Takt nur, wenn er sichtbar ist (nicht in Story-Szene/ruhigem Modus)
-        final needBg = !storyWanted && !calm;
+        final needBg = !storyWanted && !imageWanted && !calm;
         if (needBg != _bgNeeded) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _setBgNeeded(needBg);
@@ -155,9 +166,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   calm: calm,
                   breakPhase: timer.planView?.isPause ?? false,
                   powerSave: d.settings.powerSave,
+                  spec: character,
                 )
-              else if (storyWanted)
+              else if (storyWanted ||
+                  (imageWanted && !ArtImages.instance.ready))
                 const ColoredBox(color: Color(0xFF9BD2F5))
+              else if (imageWanted)
+                RepaintBoundary(
+                  child: CustomPaint(
+                    size: Size.infinite,
+                    painter: WorldVisualPainter(bg, calm: true),
+                  ),
+                )
               else
                 ValueListenableBuilder<double>(
                   valueListenable: _t,

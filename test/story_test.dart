@@ -287,12 +287,15 @@ void main() {
       },
     );
 
-    testWidgets('andere Figur nutzt weiterhin die bisherige Bühne', (t) async {
-      final env = await boot(t, character: 'dog');
-      expect(find.byType(StoryScene), findsNothing);
-      expect(find.byType(StoryProgressBar), findsNothing);
-      await done(t, env);
-    });
+    testWidgets(
+      'andere Figur nutzt dieselbe Story-Szene (nicht an Mira gekoppelt)',
+      (t) async {
+        final env = await boot(t, character: 'dog');
+        expect(find.byType(StoryScene), findsOneWidget);
+        expect(find.byType(StoryProgressBar), findsOneWidget);
+        await done(t, env);
+      },
+    );
 
     testWidgets(
       'Bilder laden noch: nur Himmelsgrund, kein Aufblitzen der alten Bühne',

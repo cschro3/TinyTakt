@@ -7,8 +7,9 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import '../../app/deps.dart';
 import '../../domain/catalog.dart';
 import '../../platform/apple_music_service.dart';
-import '../painters/character_painter.dart';
-import '../painters/scene_painter.dart';
+import '../art/story/art_images.dart';
+import '../art/visual/character_visual_painter.dart';
+import '../art/visual/world_visual_painter.dart';
 import '../painters/picture_painters.dart';
 import '../painters/timer_painters.dart';
 import '../theme.dart';
@@ -163,7 +164,7 @@ class _KeepAliveState extends State<_KeepAlive>
 
 /// Auswahl und Rechte ändern das Menü – der Timer-Takt nicht (früher: `d.all` inkl. Timer).
 Listenable _pickerListenable(AppDeps d) =>
-    Listenable.merge([d.settings, d.entitlements]);
+    Listenable.merge([d.settings, d.entitlements, ArtImages.instance]);
 
 /// Der Vorschau-Bereich ist im gewählten Zustand 4 px kleiner (dickerer Rand) – diese Größe wird
 /// bei Ruhe vorab gebacken, damit das Antippen einer Figur nichts mehr zeichnen muss (nur Figuren:
@@ -413,15 +414,18 @@ class _Characters extends StatelessWidget {
                               (p) => p.copyWith(characterId: c.id),
                             ),
                       child: CachedPreview(
-                        cacheKey: 'char:${c.id}',
+                        cacheKey:
+                            'char:${c.id}:${CharacterVisualPainter.bitmapReady(c.id)}',
                         alsoBakeDelta: _altSizeDelta(sel == c.id),
                         margin: const Offset(
                           14,
                           14,
                         ), // Überhang (Funkeln, Schatten) bleibt erhalten
                         opacity: locked ? 0.6 : 1,
-                        paint: (cv, sz) =>
-                            CharacterPainter(c, shadow: false).paint(cv, sz),
+                        paint: (cv, sz) => CharacterVisualPainter(
+                          c,
+                          shadow: false,
+                        ).paint(cv, sz),
                       ),
                     );
                   },
@@ -476,7 +480,7 @@ class _Worlds extends StatelessWidget {
                     (p) => p.copyWith(backgroundId: b.id),
                   ),
             child: CachedPreview(
-              cacheKey: 'world:${b.id}',
+              cacheKey: 'world:${b.id}:${WorldVisualPainter.bitmapReady(b.id)}',
               alsoBakeDelta: _altSizeDelta(
                 d.settings.profile.backgroundId == b.id,
               ),
@@ -489,7 +493,7 @@ class _Worlds extends StatelessWidget {
                     const Radius.circular(14),
                   ),
                 );
-                ScenePainter(b, calm: true).paint(cv, sz);
+                WorldVisualPainter(b, calm: true).paint(cv, sz);
               },
             ),
           );

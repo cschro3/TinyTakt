@@ -9,7 +9,11 @@ import 'package:flutter/scheduler.dart';
 import '../../../domain/timer_engine.dart';
 import '../../../app/perf_flags.dart';
 import '../../../app/perf_monitor.dart';
+import '../../../domain/catalog.dart' show CharacterSpec;
+import '../../painters/character_painter.dart' show Mood;
 import '../art_kit.dart';
+import '../visual/character_visual_painter.dart';
+import '../visual/visual_registry.dart';
 import '../celebration.dart';
 import '../figures/registry.dart';
 import '../rig.dart';
@@ -90,6 +94,7 @@ class _SceneData {
   Emotion emotion = Emotion.calm;
   bool calm = false, running = false, finished = false;
   StoryTier tier = StoryTier.full;
+  CharacterSpec? spec;
   final Map<int, double> passedAt = {};
   StoryGeometry? geo;
   MeadowAmbient? ambient;
@@ -110,7 +115,12 @@ class StoryScene extends StatefulWidget {
     required this.calm,
     this.breakPhase = false,
     this.powerSave = false,
+    this.spec,
   });
+
+  /// Figur auf dem Weg; ohne Angabe Mira. Bild-Figuren nutzen das Mesh, alle anderen den
+  /// gemeinsamen Figuren-Renderer (Vektor-Fallback, gleiche Bahn und Etappen).
+  final CharacterSpec? spec;
   final TimerEngine engine;
   final StoryController controller;
   final double Function() fraction;
@@ -154,6 +164,7 @@ class _StorySceneState extends State<StoryScene>
         ..locked = true;
     }
     _data.calm = widget.calm;
+    _data.spec = widget.spec;
     _staticPainter = _StaticPainter(_data, _geoTick);
     _ambientPainter = _AmbientPainter(
       _data,
@@ -169,6 +180,10 @@ class _StorySceneState extends State<StoryScene>
   void didUpdateWidget(StoryScene old) {
     super.didUpdateWidget(old);
     _gov.forceMinimal = widget.powerSave;
+    if (old.spec?.id != widget.spec?.id) {
+      _data.spec = widget.spec;
+      _miraTick.value++;
+    }
     if (old.calm != widget.calm || old.powerSave != widget.powerSave) {
       _data.calm = widget.calm;
       _onTick(_sw.elapsedMicroseconds / 1e6);
@@ -390,11 +405,48 @@ class _MiraPainter extends CustomPainter {
   _MiraPainter(this.d, Listenable repaint) : super(repaint: repaint);
   final _SceneData d;
 
+  /// Figuren ohne Bild-Asset: gemeinsamer Figuren-Renderer auf derselben Bahn.
+  void _paintVectorFigure(
+    Canvas canvas,
+    CharacterSpec spec,
+    Offset feet,
+    double h,
+  ) {
+    final side = h * 1.1;
+    final step = d.running && !d.calm ? math.sin(d.t * 5.6).abs() : 0.0;
+    final mood = d.finished
+        ? Mood.happy
+        : d.emotion == Emotion.sleepy
+        ? Mood.sleepy
+        : d.running
+        ? Mood.active
+        : Mood.idle;
+    canvas.save();
+    canvas.translate(
+      feet.dx - side / 2,
+      feet.dy - side * 0.965 - step * h * 0.08,
+    );
+    CharacterVisualPainter(
+      spec,
+      t: d.t,
+      mood: mood,
+      calm: d.calm,
+      shadow: true,
+      emotion: d.emotion,
+      emotionT: d.emotionT,
+    ).paint(canvas, Size(side, side));
+    canvas.restore();
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final geo = d.geo;
     final mesh = ArtImages.instance.miraMesh;
-    if (geo == null || mesh == null || perfOff('mira')) return;
+    final spec = d.spec;
+    final vector =
+        spec != null &&
+        VisualRegistry.character(spec.id).renderer != FigureRenderer.bitmapMesh;
+    if (geo == null || (mesh == null && !vector) || perfOff('mira')) return;
     final sw = Stopwatch()..start();
     final path = MeadowPath.instance;
     final s = geo.s;
@@ -423,29 +475,38 @@ class _MiraPainter extends CustomPainter {
     final img = path.at(d.u);
     final feet = geo.toScreen(img).translate(0, 2);
     final h = 370 * s * geo.depthScale(img.dy);
-    final pose = computePose(
-      premiumFigures['nova_mira']!.personality,
-      d.emotion,
-      t,
-      d.emotionT,
-      calm: calm,
-    );
-    if (d.running && !calm) {
-      final step = math.sin(t * 5.6).abs();
-      pose.bodyDy -= step * 0.10;
-      pose.squash += step < 0.18 ? 0.45 : -0.08;
-      pose.lean += math.sin(t * 5.6) * 0.03;
-    }
-    MiraMesh.shadow(canvas, feet, h * 0.9, (-pose.bodyDy).clamp(0.0, 0.4) * 2);
-    MiraMesh.paint(canvas, mesh, feet, h, pose, t, calm: calm);
-    if (!calm) {
-      MiraMesh.sparkles(
-        canvas,
-        feet.translate(0, -h * 0.55),
-        h * 0.55,
-        pose.sparkle,
+    if (vector) {
+      _paintVectorFigure(canvas, spec, feet, h);
+    } else {
+      final pose = computePose(
+        premiumFigures['nova_mira']!.personality,
+        d.emotion,
         t,
+        d.emotionT,
+        calm: calm,
       );
+      if (d.running && !calm) {
+        final step = math.sin(t * 5.6).abs();
+        pose.bodyDy -= step * 0.10;
+        pose.squash += step < 0.18 ? 0.45 : -0.08;
+        pose.lean += math.sin(t * 5.6) * 0.03;
+      }
+      MiraMesh.shadow(
+        canvas,
+        feet,
+        h * 0.9,
+        (-pose.bodyDy).clamp(0.0, 0.4) * 2,
+      );
+      MiraMesh.paint(canvas, mesh!, feet, h, pose, t, calm: calm);
+      if (!calm) {
+        MiraMesh.sparkles(
+          canvas,
+          feet.translate(0, -h * 0.55),
+          h * 0.55,
+          pose.sparkle,
+          t,
+        );
+      }
     }
     // Aufplatzen frisch erreichter Steine
     if (!calm) {

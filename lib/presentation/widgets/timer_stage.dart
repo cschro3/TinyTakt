@@ -9,7 +9,8 @@ import '../../domain/catalog.dart';
 import '../../domain/timer_engine.dart';
 import '../art/celebration.dart';
 import '../art/rig.dart';
-import '../painters/character_painter.dart';
+import '../art/visual/character_visual_painter.dart';
+import '../painters/character_painter.dart' show Mood;
 import '../painters/picture_painters.dart';
 import '../painters/timer_painters.dart';
 
@@ -172,7 +173,7 @@ class _TimerStageState extends State<TimerStage>
             width: size,
             height: size,
             child: CustomPaint(
-              painter: CharacterPainter(
+              painter: CharacterVisualPainter(
                 m.spec!,
                 t: t,
                 mood: _mood,
