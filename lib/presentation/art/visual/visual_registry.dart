@@ -1,3 +1,5 @@
+import 'package:flutter/painting.dart' show Color;
+
 import '../../../domain/catalog.dart';
 import '../figures/registry.dart';
 
@@ -141,6 +143,20 @@ class VisualRegistry {
     }
     return WorldVisual(id, AssetTier.premiumVector, WorldRenderer.procedural);
   }
+
+  /// Dezenter Akzent je Welt (dunkel genug für ≥ 4,5:1 Kontrast auf der weißen Zeitfläche).
+  static Color accent(String worldId) => switch (worldId) {
+    'meadow' => const Color(0xFF3F6F17),
+    'sky' => const Color(0xFF2A62A0),
+    'beach' => const Color(0xFF8A5A12),
+    'forest' => const Color(0xFF1B6F58),
+    'night' => const Color(0xFF453A93),
+    'space' => const Color(0xFF55369E),
+    'underwater' => const Color(0xFF12707F),
+    'winter' => const Color(0xFF38658B),
+    'sunset' => const Color(0xFFA64A28),
+    _ => const Color(0xFF6B6485),
+  };
 
   /// Löst die Szene auf. [assetsReady]/[assetsFailed] beschreiben den Ladezustand der Bilder:
   /// scheitert das Laden, greift der dokumentierte Fallback (Vektor), sonst nie.

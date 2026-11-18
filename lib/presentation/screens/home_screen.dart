@@ -13,8 +13,6 @@ import '../../domain/session_plan.dart';
 import '../../domain/timer_engine.dart';
 import '../art/story/art_images.dart';
 import '../art/story/story_scene.dart';
-import '../art/visual/visual_registry.dart';
-import '../art/visual/world_visual_painter.dart';
 import '../painters/character_painter.dart';
 import '../painters/scene_painter.dart';
 import '../theme.dart';
@@ -450,6 +448,7 @@ class _Controls extends StatelessWidget {
     final status = e.status;
     final de = context.isDe;
     final pv = timer.planView;
+    final accent = VisualRegistry.accent(effectiveBackground(d).id);
     final String label;
     if (pv != null &&
         status != TimerStatus.finished &&
@@ -497,6 +496,10 @@ class _Controls extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.92),
                     borderRadius: BorderRadius.circular(32),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.45),
+                      width: 2.5,
+                    ),
                     boxShadow: const [
                       BoxShadow(
                         color: Color(0x22000000),
@@ -510,10 +513,10 @@ class _Controls extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF6B6485),
+                          color: accent,
                         ),
                       ),
                       FittedBox(

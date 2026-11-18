@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "note": "Quelle der Wahrheit für Bild-Assets. Eintrag hier + Datei ablegen + ID in VisualRegistry (lib/presentation/art/visual/visual_registry.dart) genügt – keine Screens ändern. Geprüft von test/asset_manifest_test.dart.",
+  "limits": { "maxFileKB": 450, "maxTotalKB": 1500 },
+  "characters": {
+    "nova_mira": {
+      "version": "prototype-1",
+      "origin": "Konzeptbild vom Auftraggeber (ChatGPT), freigestellt mit tools/matte_mira.py",
+      "license": "Eigene Konzeptgrafik des Auftraggebers",
+      "files": {
+        "full": "assets/art/mira/mira_prototype.webp",
+        "phone": "assets/art/mira/mira_512.webp"
+      },
+      "alpha": true,
+      "sizes": { "full": [1097, 1093], "phone": [514, 512] },
+      "anchors": { "feet": [0.5, 0.95], "neck": [0.527, 0.58] },
+      "states": { "idle": "mesh", "breathe": "mesh", "greet": "mesh", "cheer": "mesh", "celebrate": "mesh", "sleepy": "mesh" },
+      "missingStates": ["blink", "walkCycle", "jump", "joyFace", "sleepyFace", "avatarHead"]
+    }
+  },
+  "worlds": {
+    "meadow": {
+      "version": "prototype-1",
+      "origin": "Konzeptbild vom Auftraggeber (ChatGPT)",
+      "license": "Eigene Konzeptgrafik des Auftraggebers",
+      "files": {
+        "full": "assets/art/meadow/meadow_prototype.webp",
+        "phone": "assets/art/meadow/meadow_900.webp"
+      },
+      "alpha": false,
+      "sizes": { "full": [1199, 1312], "phone": [900, 985] },
+      "path": { "start": [265, 790], "goal": [1030, 418], "stones": 7 },
+      "missingLayers": ["separate sky/mid/foreground layers", "ambient animation layers", "success scene"]
+    }
+  }
+}
