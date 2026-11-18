@@ -92,7 +92,7 @@ void main() {
     test(
       'LRU: begrenzt Einträge und Speicher, Kacheln behalten gültige Klone',
       () {
-        const big = Size(700, 700); // ≈ 1,9 MB je Bild bei dpr 1
+        const big = Size(1000, 1000); // ≈ 3,8 MB je Bild bei dpr 1
         ui.Image? clone;
         for (var i = 0; i < 40; i++) {
           final img = PreviewCache.instance.get(
@@ -110,7 +110,7 @@ void main() {
         expect(PreviewCache.instance.length, lessThan(40));
         expect(
           clone!.width,
-          700,
+          1000,
         ); // Original evtl. entsorgt, Klon bleibt nutzbar
         clone.dispose();
         final before = PreviewCache.instance.megabytes;
@@ -122,6 +122,40 @@ void main() {
         ); // behält mindestens die 8 jüngsten
       },
     );
+
+    testWidgets('Vorwärmen stoppt am Speicher-Budget und verdrängt nichts', (
+      t,
+    ) async {
+      PreviewCache.instance.clear();
+      for (var i = 0; i < 14; i++) {
+        PreviewCache.instance.get(
+          'fill$i',
+          const Size(1000, 1000),
+          1,
+          (c, s) => c.drawRect(Offset.zero & s, Paint()),
+        );
+      }
+      expect(
+        PreviewCache.instance.megabytes,
+        greaterThan(PreviewCache.warmBudgetMegabytes),
+      );
+      final before = PreviewCache.instance.length;
+      var draws = 0;
+      for (var i = 0; i < 3; i++) {
+        PreviewCache.instance.enqueue(
+          'warm$i',
+          const Size(40, 40),
+          1,
+          (c, s) => draws++,
+        );
+      }
+      for (var i = 0; i < 12; i++) {
+        await t.pump(const Duration(milliseconds: 16));
+      }
+      expect(draws, 0, reason: 'über dem Budget wird nicht mehr vorgewärmt');
+      expect(PreviewCache.instance.pending.value, 0);
+      expect(PreviewCache.instance.length, before);
+    });
 
     testWidgets('Vorwärmen backt nur bei Ruhe und höchstens eines je Frame', (
       t,

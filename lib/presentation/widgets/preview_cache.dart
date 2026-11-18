@@ -18,10 +18,14 @@ class PreviewCache {
   PreviewCache._();
   static final PreviewCache instance = PreviewCache._();
 
-  static const int maxEntries = 220;
+  static const int maxEntries = 260;
 
   /// Obergrenze des Bildspeichers (RGBA) in MB; älteste Einträge fliegen zuerst raus.
   static const double maxMegabytes = 64;
+
+  /// Vorwärmen (Hintergrund) füllt den Cache höchstens bis hierhin; so verdrängt es nie Bilder, die
+  /// gerade gebraucht werden. Was dahinter liegt, wird bei Bedarf einmal gebacken.
+  static const double warmBudgetMegabytes = 48;
   final LinkedHashMap<String, ui.Image> _map = LinkedHashMap();
 
   /// Anzahl gebackener Bilder (Tests/Messung).
@@ -90,7 +94,8 @@ class PreviewCache {
       }
       final first = _queue.keys.first;
       final job = _queue.remove(first)!;
-      job();
+      if (megabytes < warmBudgetMegabytes)
+        job(); // über dem Budget wird nicht mehr vorgewärmt
       pending.value = _queue.length;
       _schedule();
     });
@@ -162,6 +167,7 @@ class PreviewCache {
   void clear() {
     cancelPending();
     _scheduled = false;
+    _lastPointerMs = -100000;
     for (final i in _map.values) {
       i.dispose();
     }
