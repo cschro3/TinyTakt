@@ -1,0 +1,314 @@
+{
+ "base": {
+  "fps": [
+   6.2,
+   5.9,
+   7
+  ],
+  "p50": [
+   150.1,
+   166.7,
+   133.4
+  ],
+  "p95": [
+   200.1,
+   200,
+   183.4
+  ],
+  "over33": [
+   75,
+   71,
+   85
+  ],
+  "heapMB": [
+   40.9,
+   39.2,
+   34.3
+  ],
+  "mainMsPerFrame": [
+   165.23,
+   177.08,
+   145.35
+  ],
+  "firstFrameMs": [
+   981,
+   839,
+   1063
+  ],
+  "assets": [
+   {
+    "n": "canvaskit.wasm",
+    "kb": 0,
+    "ms": 576
+   },
+   {
+    "n": "main.dart.js",
+    "kb": 3744,
+    "ms": 47
+   },
+   {
+    "n": "mira_prototype.webp",
+    "kb": 293,
+    "ms": 6
+   },
+   {
+    "n": "meadow_prototype.webp",
+    "kb": 398,
+    "ms": 4
+   }
+  ]
+ },
+ "new_full": {
+  "fps": [
+   17.6,
+   17.8,
+   18
+  ],
+  "p50": [
+   50.1,
+   50,
+   50
+  ],
+  "p95": [
+   66.7,
+   66.7,
+   66.7
+  ],
+  "over33": [
+   205,
+   211,
+   212
+  ],
+  "heapMB": [
+   24.6,
+   21.7,
+   21.6
+  ],
+  "mainMsPerFrame": [
+   57.69,
+   56.94,
+   56.38
+  ],
+  "firstFrameMs": [
+   995,
+   954,
+   842
+  ],
+  "assets": [
+   {
+    "n": "canvaskit.wasm",
+    "kb": 0,
+    "ms": 627
+   },
+   {
+    "n": "main.dart.js",
+    "kb": 3769,
+    "ms": 19
+   },
+   {
+    "n": "mira_512.webp",
+    "kb": 89,
+    "ms": 3
+   },
+   {
+    "n": "meadow_900.webp",
+    "kb": 252,
+    "ms": 5
+   }
+  ]
+ },
+ "new_adaptiv": {
+  "fps": [
+   23.7,
+   23.9,
+   22.7
+  ],
+  "p50": [
+   49.9,
+   49.9,
+   50
+  ],
+  "p95": [
+   66.7,
+   50.1,
+   66.7
+  ],
+  "over33": [
+   184,
+   192,
+   197
+  ],
+  "heapMB": [
+   21.6,
+   21.5,
+   21.3
+  ],
+  "mainMsPerFrame": [
+   41.03,
+   40.98,
+   42.57
+  ],
+  "firstFrameMs": [
+   998,
+   936,
+   919
+  ],
+  "assets": [
+   {
+    "n": "canvaskit.wasm",
+    "kb": 0,
+    "ms": 646
+   },
+   {
+    "n": "main.dart.js",
+    "kb": 3769,
+    "ms": 45
+   },
+   {
+    "n": "mira_512.webp",
+    "kb": 89,
+    "ms": 3
+   },
+   {
+    "n": "meadow_900.webp",
+    "kb": 252,
+    "ms": 4
+   }
+  ]
+ },
+ "base_dpr1": {
+  "fps": [
+   22.1
+  ],
+  "p50": [
+   50
+  ],
+  "p95": [
+   66.6
+  ],
+  "over33": [
+   194
+  ],
+  "heapMB": [
+   28.6
+  ],
+  "mainMsPerFrame": [
+   45.92
+  ],
+  "firstFrameMs": [
+   911
+  ],
+  "assets": [
+   {
+    "n": "canvaskit.wasm",
+    "kb": 0,
+    "ms": 556
+   },
+   {
+    "n": "main.dart.js",
+    "kb": 3744,
+    "ms": 53
+   },
+   {
+    "n": "mira_prototype.webp",
+    "kb": 293,
+    "ms": 4
+   },
+   {
+    "n": "meadow_prototype.webp",
+    "kb": 398,
+    "ms": 5
+   }
+  ]
+ },
+ "new_full_dpr1": {
+  "fps": [
+   58.9
+  ],
+  "p50": [
+   16.7
+  ],
+  "p95": [
+   16.8
+  ],
+  "over33": [
+   4
+  ],
+  "heapMB": [
+   27.9
+  ],
+  "mainMsPerFrame": [
+   16.24
+  ],
+  "firstFrameMs": [
+   866
+  ],
+  "assets": [
+   {
+    "n": "canvaskit.wasm",
+    "kb": 0,
+    "ms": 548
+   },
+   {
+    "n": "main.dart.js",
+    "kb": 3769,
+    "ms": 26
+   },
+   {
+    "n": "mira_512.webp",
+    "kb": 89,
+    "ms": 4
+   },
+   {
+    "n": "meadow_900.webp",
+    "kb": 252,
+    "ms": 3
+   }
+  ]
+ },
+ "new_adaptiv_dpr1": {
+  "fps": [
+   58.9
+  ],
+  "p50": [
+   16.7
+  ],
+  "p95": [
+   16.8
+  ],
+  "over33": [
+   2
+  ],
+  "heapMB": [
+   33.3
+  ],
+  "mainMsPerFrame": [
+   16.31
+  ],
+  "firstFrameMs": [
+   972
+  ],
+  "assets": [
+   {
+    "n": "canvaskit.wasm",
+    "kb": 0,
+    "ms": 588
+   },
+   {
+    "n": "main.dart.js",
+    "kb": 3769,
+    "ms": 47
+   },
+   {
+    "n": "mira_512.webp",
+    "kb": 89,
+    "ms": 3
+   },
+   {
+    "n": "meadow_900.webp",
+    "kb": 252,
+    "ms": 4
+   }
+  ]
+ }
+}
