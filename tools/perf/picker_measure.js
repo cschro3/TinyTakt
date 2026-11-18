@@ -1,7 +1,8 @@
 // Misst das Auswahlmenü (Figur/Welt/Zeit/Musik) im Headless-Chromium (Software-WebGL → relativ, kein iPhone-Ersatz).
-// Aufruf: node tools/perf/picker_measure.js <URL> <Label> [dpr=2]
+// Aufruf: node tools/perf/picker_measure.js <URL> <Label> [dpr=2] [Wartezeit nach dem Öffnen in s=0]
+// Die Wartezeit simuliert „Menü war schon eine Weile offen“ (Vorwärmen abgeschlossen).
 const { chromium } = require('playwright');
-const [,, url, label, dpr = '2'] = process.argv;
+const [,, url, label, dpr = '2', settle = '0'] = process.argv;
 (async () => {
   const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const ctx = await browser.newContext({ viewport: { width: 393, height: 852 }, deviceScaleFactor: Number(dpr), isMobile: true, hasTouch: true, locale: 'de-DE' });
@@ -12,7 +13,7 @@ const [,, url, label, dpr = '2'] = process.argv;
   for (let i = 0; i < 4; i++) { await page.mouse.click(196, 806); await page.waitForTimeout(1200); }
   await page.waitForTimeout(7000);
   await page.mouse.click(30, 30); // Menü öffnen
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(1500 + Number(settle) * 1000);
   await page.evaluate(() => { window.__rec = []; window.__ph = {}; const f = t => { window.__rec.push(t); requestAnimationFrame(f); }; requestAnimationFrame(f); window.__mark = n => { window.__ph[n] = window.__rec.length; }; });
   const mark = n => page.evaluate(n => window.__mark(n), n);
   const tabs = { Figur: [49, 90], Welt: [148, 90], Zeit: [246, 90], Musik: [344, 90] };

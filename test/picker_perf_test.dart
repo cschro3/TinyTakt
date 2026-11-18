@@ -200,11 +200,16 @@ void main() {
           await t.pump(const Duration(milliseconds: 16));
         }
         expect(find.byType(RawImage), findsWidgets);
+        expect(PreviewCache.instance.bakes, greaterThan(5));
+        // Hintergrund-Backen (Größe im gewählten Zustand) erst auslaufen lassen
+        for (
+          var i = 0;
+          i < 200 && PreviewCache.instance.pending.value > 0;
+          i++
+        ) {
+          await t.pump(const Duration(milliseconds: 16));
+        }
         final bakes0 = PreviewCache.instance.bakes;
-        expect(bakes0, greaterThan(5));
-        // Wiederholtes Neuaufbauen (z. B. Einstellung ändert sich nicht) backt nichts neu
-        await t.pump(const Duration(milliseconds: 300));
-        expect(PreviewCache.instance.bakes, bakes0);
         // Auswahl einer anderen Figur: Rahmen der zwei betroffenen Kacheln + deren Figur in neuer Größe
         await t.tap(find.text('Katze Mimi'));
         for (var i = 0; i < 20; i++) {
@@ -228,6 +233,41 @@ void main() {
         env.timer.dispose();
       },
     );
+
+    testWidgets('Antippen backt nichts mehr, wenn das Menü kurz in Ruhe war', (
+      t,
+    ) async {
+      PreviewCache.instance.clear();
+      setScreen(t, const Size(393, 852), dpr: 1);
+      final env = TestEnv(pro: true);
+      await t.runAsync(env.init);
+      await t.pumpWidget(wrap(env.deps, const PickerScreen()));
+      // Ruhe: sichtbare Kacheln und ihre „gewählt“-Größe werden im Hintergrund fertig gebacken
+      var quiet = 0;
+      for (var i = 0; i < 300 && quiet < 8; i++) {
+        await t.pump(const Duration(milliseconds: 16));
+        quiet = PreviewCache.instance.pending.value == 0 ? quiet + 1 : 0;
+      }
+      expect(PreviewCache.instance.pending.value, 0);
+      final before = PreviewCache.instance.bakes;
+      await t.tap(find.text('Katze Mimi'));
+      for (var i = 0; i < 20; i++) {
+        await t.pump(const Duration(milliseconds: 16));
+      }
+      expect(env.settings.profile.characterId, 'cat');
+      expect(
+        PreviewCache.instance.bakes,
+        before,
+        reason: 'Tippen zeichnet nichts neu',
+      );
+      await t.tap(find.text('Hund Bruno'));
+      for (var i = 0; i < 20; i++) {
+        await t.pump(const Duration(milliseconds: 16));
+      }
+      expect(PreviewCache.instance.bakes, before);
+      await t.pumpWidget(const SizedBox());
+      env.timer.dispose();
+    });
 
     testWidgets(
       'Vorwärmen backt alle Figuren, Welten, Stile – Durchscrollen backt danach nichts mehr',

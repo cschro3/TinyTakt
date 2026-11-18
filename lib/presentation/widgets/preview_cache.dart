@@ -184,6 +184,7 @@ class CachedPreview extends StatefulWidget {
     required this.paint,
     this.opacity = 1,
     this.margin = Offset.zero,
+    this.alsoBakeDelta,
   });
 
   /// Eindeutig je Motiv (z. B. `char:dog`); Größe und Pixeldichte kommen automatisch dazu.
@@ -192,6 +193,10 @@ class CachedPreview extends StatefulWidget {
 
   /// Abdunkeln gesperrter Einträge ohne Offscreen-Layer.
   final double opacity;
+
+  /// Zweite Größe (aktuelle Größe + Delta), die bei Ruhe vorab gebacken wird – z. B. die Größe der
+  /// Kachel im gewählten Zustand, damit das Antippen nichts mehr zeichnen muss.
+  final Offset? alsoBakeDelta;
 
   /// Zusätzlicher Rand um die Größe (z. B. für Schatten) in logischen Pixeln.
   final Offset margin;
@@ -218,6 +223,16 @@ class _CachedPreviewState extends State<CachedPreview> {
       margin: widget.margin,
     );
     _img = base?.clone();
+    final d = widget.alsoBakeDelta;
+    if (d != null && base != null) {
+      PreviewCache.instance.enqueue(
+        widget.cacheKey,
+        Size(size.width + d.dx, size.height + d.dy),
+        dpr,
+        widget.paint,
+        margin: widget.margin,
+      );
+    }
   }
 
   @override

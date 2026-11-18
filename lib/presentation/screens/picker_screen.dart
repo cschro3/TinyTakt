@@ -165,6 +165,11 @@ class _KeepAliveState extends State<_KeepAlive>
 Listenable _pickerListenable(AppDeps d) =>
     Listenable.merge([d.settings, d.entitlements]);
 
+/// Der Vorschau-Bereich ist im gewählten Zustand 4 px kleiner (dickerer Rand) – diese Größe wird
+/// bei Ruhe vorab gebacken, damit das Antippen nichts mehr zeichnen muss.
+Offset _altSizeDelta(bool selected) =>
+    selected ? const Offset(4, 4) : const Offset(-4, -4);
+
 /// Einmal vorberechnet statt je Kachel gefiltert.
 final Map<CharacterCategory, List<CharacterSpec>> _charsByCategory = {
   for (final cat in CharacterCategory.values)
@@ -408,6 +413,7 @@ class _Characters extends StatelessWidget {
                             ),
                       child: CachedPreview(
                         cacheKey: 'char:${c.id}',
+                        alsoBakeDelta: _altSizeDelta(sel == c.id),
                         margin: const Offset(
                           14,
                           14,
@@ -470,6 +476,9 @@ class _Worlds extends StatelessWidget {
                   ),
             child: CachedPreview(
               cacheKey: 'world:${b.id}',
+              alsoBakeDelta: _altSizeDelta(
+                d.settings.profile.backgroundId == b.id,
+              ),
               opacity: locked ? 0.6 : 1,
               paint: (cv, sz) {
                 // gerundete Ecken wie zuvor (ClipRRect 14), einmal mitgebacken
@@ -512,6 +521,7 @@ class _Styles extends StatelessWidget {
                 : d.settings.updateProfile((p) => p.copyWith(style: s)),
             child: CachedPreview(
               cacheKey: 'style:${s.name}',
+              alsoBakeDelta: _altSizeDelta(d.settings.profile.style == s),
               margin: const Offset(
                 20,
                 20,
