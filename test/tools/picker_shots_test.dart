@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tinytakt/presentation/art/story/art_images.dart';
 import 'package:tinytakt/presentation/screens/picker_screen.dart';
 
 import '../helpers.dart';
@@ -11,6 +12,9 @@ void main() {
   testWidgets('Auswahlmenü: Bilder', (t) async {
     const out = String.fromEnvironment('PICKER_OUT', defaultValue: 'lokal');
     await t.runAsync(loadFonts);
+    await t.runAsync(
+      () => ArtImages.instance.ensureLoaded(cssWidth: 393, dpr: 3),
+    );
     for (final pro in [false, true]) {
       setScreen(t, const Size(393, 852), dpr: 3);
       final env = TestEnv(pro: pro);

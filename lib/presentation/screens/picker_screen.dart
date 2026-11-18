@@ -277,14 +277,23 @@ class _Tile extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 5),
-                        Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
-                            height: 1.1,
+                        // Namen werden verkleinert statt abgeschnitten (gleiche Bildfläche je Karte)
+                        SizedBox(
+                          width: double.infinity,
+                          // feste Höhe: gleiche Bildfläche für alle Karten (Vorschau-Cache bleibt gültig)
+                          height:
+                              MediaQuery.textScalerOf(context).scale(14) * 1.1,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              name,
+                              maxLines: 1,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                                height: 1.1,
+                              ),
+                            ),
                           ),
                         ),
                         if (sub != null)
