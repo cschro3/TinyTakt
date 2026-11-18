@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../../../app/perf_flags.dart';
 import '../art_kit.dart';
 import 'meadow_path.dart';
 
@@ -112,8 +113,9 @@ class MeadowBackdropPainter extends CustomPainter {
     );
     final key =
         'story.ext.${size.width.round()}x${size.height.round()}.${geo.top0.round()}';
-    final ext = _extImage(key, size);
-    if (ext != null) {
+    final ext = perfOff('ext') ? null : _extImage(key, size);
+    if (perfOff('ext')) {
+    } else if (ext != null) {
       canvas.drawImageRect(
         ext,
         Rect.fromLTWH(0, 0, ext.width.toDouble(), ext.height.toDouble()),
@@ -124,7 +126,8 @@ class MeadowBackdropPainter extends CustomPainter {
       canvas.drawPicture(PictureCache.get(key, (c) => _extension(c, size)));
     }
     _drawMesh(canvas, size);
-    if (!calm) _fx(canvas, size, s);
+    if (!calm && !perfOff('fx')) _fx(canvas, size, s);
+    if (perfOff('vignette')) return;
     final bt = geo.imageBottom;
     if (bt < size.height) {
       canvas.drawRect(
@@ -245,7 +248,7 @@ class MeadowBackdropPainter extends CustomPainter {
     const fade = 70.0;
     final top0 = geo.top0, bottom0 = geo.imageBottom;
     final fadeTop = top0 > 1, fadeBottom = bottom0 < screen.height - 1;
-    final amp = calm ? 0.0 : 3.0 * (s / 0.325);
+    final amp = (calm || perfOff('wind')) ? 0.0 : 3.0 * (s / 0.325);
     for (var j = 0; j < ny; j++) {
       final yi = h * j / _rows;
       final sy = geo.ymap(yi);
@@ -314,7 +317,7 @@ class MeadowBackdropPainter extends CustomPainter {
     final plus = BlendMode.plus;
     // Sonnenstrahlen (aus dem Licht hinter dem Baum)
     final origin = p(190, 285);
-    for (var i = 0; i < 7; i++) {
+    for (var i = 0; i < (perfOff('rays') ? 0 : 7); i++) {
       final a = 0.25 + i * 0.17;
       final pulse = 0.65 + 0.35 * math.sin(t * 0.55 + i * 1.3);
       final len = size.height * 0.75;
@@ -368,7 +371,7 @@ class MeadowBackdropPainter extends CustomPainter {
     }
     // Pollen und Glitzer treiben durchs Bild
     final r2 = Rng(5);
-    for (var i = 0; i < 26; i++) {
+    for (var i = 0; i < (perfOff('particles') ? 0 : 26); i++) {
       final bx = r2.next(),
           by = r2.range(0.18, 0.95),
           sp = r2.range(0.01, 0.03),

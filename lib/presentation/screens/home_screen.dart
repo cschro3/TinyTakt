@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../app/deps.dart';
+import '../../app/perf_flags.dart';
 import '../../domain/catalog.dart';
 import '../../domain/session_plan.dart';
 import '../../domain/timer_engine.dart';
@@ -146,7 +147,9 @@ class _HomeScreenState extends State<HomeScreen>
                               scenery: bg.scenery,
                             ),
                           );
-                    final controls = _Controls(locked: locked);
+                    final Widget controls = perfOff('ui')
+                        ? const SizedBox(height: 300)
+                        : _Controls(locked: locked);
                     final top = _TopBar(locked: locked);
                     if (landscape) {
                       return Column(

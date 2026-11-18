@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../../domain/timer_engine.dart';
+import '../../../app/perf_flags.dart';
 import '../art_kit.dart';
 import '../celebration.dart';
 import '../figures/registry.dart';
@@ -231,6 +232,7 @@ class _MiraLayerPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (perfOff('mira')) return;
     final path = MeadowPath.instance;
     final s = geo.s;
     // Etappen: erreichte Sternsteine leuchten, der nächste pulsiert, frisch erreichte „platzen“ auf
