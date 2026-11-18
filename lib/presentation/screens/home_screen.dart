@@ -113,17 +113,20 @@ class _HomeScreenState extends State<HomeScreen> {
       ]),
       builder: (context, _) {
         final bg = effectiveBackground(d);
-        // Illustrierte Story-Szene (Prototyp): Mira + Blumenwiese + Abenteuer-Timer
-        final storyOn =
-            ArtImages.instance.ready &&
+        // Illustrierte Story-Szene (Prototyp): Mira + Blumenwiese + Abenteuer-Timer.
+        // Solange die Bilder laden, zeigt diese Konfiguration nur den Himmelsgrund (kein Aufblitzen
+        // der alten Bühne); scheitert das Laden, bleibt die bisherige Bühne dauerhaft aktiv.
+        final storyWanted =
+            !ArtImages.instance.failed &&
             d.settings.profile.characterId == 'nova_mira' &&
             effectiveCharacter(d).id == 'nova_mira' &&
             bg.id == 'meadow' &&
             effectiveStyle(d) == TimerStyle.adventure;
+        final storyOn = storyWanted && ArtImages.instance.ready;
         final calm =
             d.settings.calmMode || MediaQuery.of(context).disableAnimations;
         // klassischer Hintergrund-Takt nur, wenn er sichtbar ist (nicht in Story-Szene/ruhigem Modus)
-        final needBg = !storyOn && !calm;
+        final needBg = !storyWanted && !calm;
         if (needBg != _bgNeeded) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _setBgNeeded(needBg);
@@ -153,6 +156,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   breakPhase: timer.planView?.isPause ?? false,
                   powerSave: d.settings.powerSave,
                 )
+              else if (storyWanted)
+                const ColoredBox(color: Color(0xFF9BD2F5))
               else
                 ValueListenableBuilder<double>(
                   valueListenable: _t,
@@ -164,7 +169,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: LayoutBuilder(
                   builder: (context, c) {
                     final landscape = c.maxWidth > c.maxHeight * 1.1;
-                    final stage = storyOn
+                    final stage = storyWanted && !storyOn
+                        ? const SizedBox.shrink()
+                        : storyOn
                         ? StoryStage(
                             controller: _story,
                             countdown: timer.countdown,

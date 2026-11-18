@@ -12,6 +12,7 @@ import 'package:tinytakt/presentation/art/story/meadow_story.dart';
 import 'package:tinytakt/presentation/art/story/mira_sprite.dart';
 import 'package:tinytakt/presentation/art/story/story_scene.dart';
 import 'package:tinytakt/presentation/screens/home_screen.dart';
+import 'package:tinytakt/presentation/widgets/timer_stage.dart';
 
 import 'helpers.dart';
 
@@ -293,25 +294,59 @@ void main() {
       await done(t, env);
     });
 
-    testWidgets('ohne geladene Bilder: sauberer Fallback', (t) async {
-      setScreen(t, const Size(393, 852), dpr: 1);
-      final saved = (ArtImages.instance.mira, ArtImages.instance.meadow);
-      ArtImages.instance.setForTest(mira: null, meadow: null);
-      final env = TestEnv(pro: true);
-      await t.runAsync(env.init);
-      await env.settings.updateProfile(
-        (p) => p.copyWith(
-          characterId: 'nova_mira',
-          backgroundId: 'meadow',
-          style: TimerStyle.adventure,
-        ),
-      );
-      await t.pumpWidget(wrap(env.deps, const HomeScreen()));
-      await pumpFor(t, 0.3);
-      expect(find.byType(StoryScene), findsNothing);
-      expect(find.text('05:00'), findsOneWidget);
-      ArtImages.instance.setForTest(mira: saved.$1, meadow: saved.$2);
-      await done(t, env);
-    });
+    testWidgets(
+      'Bilder laden noch: nur Himmelsgrund, kein Aufblitzen der alten Bühne',
+      (t) async {
+        setScreen(t, const Size(393, 852), dpr: 1);
+        final saved = (ArtImages.instance.mira, ArtImages.instance.meadow);
+        ArtImages.instance.setForTest(mira: null, meadow: null);
+        final env = TestEnv(pro: true);
+        await t.runAsync(env.init);
+        await env.settings.updateProfile(
+          (p) => p.copyWith(
+            characterId: 'nova_mira',
+            backgroundId: 'meadow',
+            style: TimerStyle.adventure,
+          ),
+        );
+        await t.pumpWidget(wrap(env.deps, const HomeScreen()));
+        await pumpFor(t, 0.3);
+        expect(find.byType(StoryScene), findsNothing);
+        expect(
+          find.byType(TimerStage),
+          findsNothing,
+        ); // keine flache Ersatz-Mira
+        expect(find.text('05:00'), findsOneWidget); // Bedienung bleibt nutzbar
+        expect(find.byIcon(Icons.play_arrow_rounded), findsWidgets);
+        ArtImages.instance.setForTest(mira: saved.$1, meadow: saved.$2);
+        await done(t, env);
+      },
+    );
+
+    testWidgets(
+      'Laden fehlgeschlagen: bisherige Bühne bleibt dauerhaft aktiv',
+      (t) async {
+        setScreen(t, const Size(393, 852), dpr: 1);
+        final saved = (ArtImages.instance.mira, ArtImages.instance.meadow);
+        ArtImages.instance.setForTest(mira: null, meadow: null);
+        ArtImages.instance.failed = true;
+        final env = TestEnv(pro: true);
+        await t.runAsync(env.init);
+        await env.settings.updateProfile(
+          (p) => p.copyWith(
+            characterId: 'nova_mira',
+            backgroundId: 'meadow',
+            style: TimerStyle.adventure,
+          ),
+        );
+        await t.pumpWidget(wrap(env.deps, const HomeScreen()));
+        await pumpFor(t, 0.3);
+        expect(find.byType(StoryScene), findsNothing);
+        expect(find.byType(TimerStage), findsOneWidget);
+        ArtImages.instance.failed = false;
+        ArtImages.instance.setForTest(mira: saved.$1, meadow: saved.$2);
+        await done(t, env);
+      },
+    );
   });
 }

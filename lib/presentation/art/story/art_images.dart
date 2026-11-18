@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../../app/perf_monitor.dart';
 import 'meadow_path.dart';
+import 'mira_cells.dart';
 import 'mira_sprite.dart';
 
 /// Lädt und hält die gerasterten Illustrationen (WebP) für die „Story“-Darstellung.
@@ -34,6 +35,9 @@ class ArtImages extends ChangeNotifier {
   int loadMs = 0;
   Future<void>? _loading;
 
+  /// Laden ist fehlgeschlagen: die bisherige Darstellung bleibt dauerhaft aktiv.
+  bool failed = false;
+
   bool get ready => mira != null && meadow != null;
 
   /// Faktor Bildpunkte der geladenen Wiese je Bildpunkt des Referenzbilds (1199 px breit).
@@ -62,12 +66,10 @@ class ArtImages extends ChangeNotifier {
         if (miraNeeded <= 512) miraKey = mira512Asset;
         if (cssWidth * dpr <= 900) meadowKey = meadow900Asset;
       }
-      final m = await _decode(miraKey);
-      final w = await _decode(meadowKey);
-      final rgba = (await m.toByteData(format: ui.ImageByteFormat.rawRgba))
-          ?.buffer
-          .asUint8List();
-      miraMesh = MiraMeshData(m, rgba: rgba);
+      // beide Bilder parallel laden und decodieren
+      final res = await Future.wait([_decode(miraKey), _decode(meadowKey)]);
+      final m = res[0], w = res[1];
+      miraMesh = MiraMeshData(m, cells: miraActiveCells);
       loadedMiraAsset = miraKey;
       loadedMeadowAsset = meadowKey;
       mira = m;
@@ -77,7 +79,8 @@ class ArtImages extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('Story-Bilder nicht ladbar, Fallback aktiv: $e');
-      _loading = null; // nächster Versuch möglich
+      failed = true;
+      notifyListeners();
     }
   }
 
@@ -95,6 +98,7 @@ class ArtImages extends ChangeNotifier {
     meadow = null;
     miraMesh = null;
     loadedMiraAsset = loadedMeadowAsset = null;
+    failed = false;
     _loading = null;
   }
 

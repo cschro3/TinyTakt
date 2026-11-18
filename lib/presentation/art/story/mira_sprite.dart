@@ -169,7 +169,8 @@ class MiraMeshData {
   static const rows = 24;
   static const vertexCount = (cols + 1) * (rows + 1);
 
-  MiraMeshData(this.image, {Uint8List? rgba}) {
+  /// [cells]: aktive Zellen (Zeile für Zeile, '1' = sichtbar); ohne Angabe alle Zellen.
+  MiraMeshData(this.image, {String? cells}) {
     tex = Float32List(vertexCount * 2);
     for (var j = 0; j <= rows; j++) {
       for (var i = 0; i <= cols; i++) {
@@ -178,36 +179,10 @@ class MiraMeshData {
         tex[k + 1] = image.height * j / rows;
       }
     }
-    final active = List<bool>.filled(cols * rows, true);
-    if (rgba != null) {
-      for (var cy = 0; cy < rows; cy++) {
-        for (var cx = 0; cx < cols; cx++) {
-          final x0 = cx * image.width ~/ cols,
-              x1 = (cx + 1) * image.width ~/ cols;
-          final y0 = cy * image.height ~/ rows,
-              y1 = (cy + 1) * image.height ~/ rows;
-          var any = false;
-          // jedes Pixel prüfen (auch feine Härchen); ein Pixel Rand wegen der Filterung
-          for (
-            var y = math.max(y0 - 1, 0);
-            y < math.min(y1 + 1, image.height) && !any;
-            y++
-          ) {
-            for (
-              var x = math.max(x0 - 1, 0);
-              x < math.min(x1 + 1, image.width);
-              x++
-            ) {
-              if (rgba[(y * image.width + x) * 4 + 3] > 0) {
-                any = true;
-                break;
-              }
-            }
-          }
-          active[cy * cols + cx] = any;
-        }
-      }
-    }
+    final active = List<bool>.generate(
+      cols * rows,
+      (i) => cells == null || cells.length != cols * rows || cells[i] == '1',
+    );
     final idx = <int>[];
     for (var j = 0; j < rows; j++) {
       for (var i = 0; i < cols; i++) {

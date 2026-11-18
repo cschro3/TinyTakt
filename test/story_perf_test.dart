@@ -18,6 +18,7 @@ import 'package:tinytakt/presentation/art/rig.dart';
 import 'package:tinytakt/presentation/art/story/art_images.dart';
 import 'package:tinytakt/presentation/art/story/meadow_path.dart';
 import 'package:tinytakt/presentation/art/story/meadow_story.dart';
+import 'package:tinytakt/presentation/art/story/mira_cells.dart';
 import 'package:tinytakt/presentation/art/story/mira_sprite.dart';
 import 'package:tinytakt/presentation/art/story/story_quality.dart';
 
@@ -72,6 +73,51 @@ void main() {
       // Kleinwinkel-Näherung und Atem-Maske: < 0,6 % der Figurhöhe (≈ 1 px bei 180 px Höhe)
       expect(worst, lessThan(0.006));
     });
+
+    testWidgets(
+      'vorberechnete Zellmaske passt zum Mira-Bild (tools/mira_cells.py)',
+      (t) async {
+        await t.runAsync(() async {
+          final bytes = await _load(ArtImages.miraAsset);
+          final img = (await (await ui.instantiateImageCodec(
+            bytes,
+          )).getNextFrame()).image;
+          final px = (await img.toByteData())!;
+          final w = img.width, h = img.height;
+          const n = MiraMeshData.cols;
+          final buf = StringBuffer();
+          for (var cy = 0; cy < n; cy++) {
+            for (var cx = 0; cx < n; cx++) {
+              final x0 = cx * w ~/ n, x1 = (cx + 1) * w ~/ n;
+              final y0 = cy * h ~/ n, y1 = (cy + 1) * h ~/ n;
+              var any = false;
+              for (
+                var y = math.max(y0 - 1, 0);
+                y < math.min(y1 + 1, h) && !any;
+                y++
+              ) {
+                for (
+                  var x = math.max(x0 - 1, 0);
+                  x < math.min(x1 + 1, w);
+                  x++
+                ) {
+                  if (px.getUint8((y * w + x) * 4 + 3) > 0) {
+                    any = true;
+                    break;
+                  }
+                }
+              }
+              buf.write(any ? '1' : '0');
+            }
+          }
+          expect(
+            miraActiveCells,
+            buf.toString(),
+            reason: 'python3 tools/mira_cells.py ausführen',
+          );
+        });
+      },
+    );
 
     testWidgets('Netz überspringt transparente Zellen, Indizes sind gültig', (
       t,
