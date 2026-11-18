@@ -1,0 +1,120 @@
+{
+ "alt": [
+  {
+   "oeffnen_ms": 1212.289,
+   "scroll_mean_ms": 3.52,
+   "scroll_p95_ms": 15.84,
+   "scroll_max_ms": 37.96,
+   "tabs_gesamt_ms_je_wechsel": 235.0,
+   "tabs_einzeln_ms": [
+    332.5,
+    193.1,
+    260.2,
+    294.7,
+    180.6,
+    222.3,
+    177.4,
+    219.1
+   ],
+   "antippen_ms": 98.554,
+   "leerlauf_ms_je_frame": 0.561
+  },
+  {
+   "oeffnen_ms": 1161.107,
+   "scroll_mean_ms": 3.99,
+   "scroll_p95_ms": 17.79,
+   "scroll_max_ms": 37.59,
+   "tabs_gesamt_ms_je_wechsel": 242.7,
+   "tabs_einzeln_ms": [
+    339.8,
+    230.7,
+    268.5,
+    295.6,
+    172.4,
+    204.7,
+    184.9,
+    244.9
+   ],
+   "antippen_ms": 106.696,
+   "leerlauf_ms_je_frame": 0.571
+  },
+  {
+   "oeffnen_ms": 994.001,
+   "scroll_mean_ms": 3.62,
+   "scroll_p95_ms": 15.91,
+   "scroll_max_ms": 37.3,
+   "tabs_gesamt_ms_je_wechsel": 211.8,
+   "tabs_einzeln_ms": [
+    299.8,
+    195.0,
+    246.1,
+    249.5,
+    150.2,
+    202.7,
+    169.2,
+    181.5
+   ],
+   "antippen_ms": 80.716,
+   "leerlauf_ms_je_frame": 0.422
+  }
+ ],
+ "neu": [
+  {
+   "oeffnen_ms": 1389.53,
+   "scroll_mean_ms": 5.81,
+   "scroll_p95_ms": 18.5,
+   "scroll_max_ms": 337.02,
+   "tabs_gesamt_ms_je_wechsel": 219.8,
+   "tabs_einzeln_ms": [
+    498.4,
+    272.6,
+    274.8,
+    179.3,
+    138.8,
+    117.8,
+    138.3,
+    138.6
+   ],
+   "antippen_ms": 302.214,
+   "leerlauf_ms_je_frame": 0.56
+  },
+  {
+   "oeffnen_ms": 1583.813,
+   "scroll_mean_ms": 7.17,
+   "scroll_p95_ms": 23.58,
+   "scroll_max_ms": 413.95,
+   "tabs_gesamt_ms_je_wechsel": 208.0,
+   "tabs_einzeln_ms": [
+    400.9,
+    263.7,
+    268.0,
+    197.0,
+    158.8,
+    139.9,
+    122.9,
+    112.9
+   ],
+   "antippen_ms": 257.722,
+   "leerlauf_ms_je_frame": 0.569
+  },
+  {
+   "oeffnen_ms": 1689.259,
+   "scroll_mean_ms": 7.21,
+   "scroll_p95_ms": 25.42,
+   "scroll_max_ms": 397.39,
+   "tabs_gesamt_ms_je_wechsel": 194.5,
+   "tabs_einzeln_ms": [
+    417.9,
+    230.4,
+    248.1,
+    166.5,
+    146.0,
+    109.6,
+    110.1,
+    127.4
+   ],
+   "antippen_ms": 257.973,
+   "leerlauf_ms_je_frame": 0.506
+  }
+ ]
+}
