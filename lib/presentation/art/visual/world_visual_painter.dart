@@ -1,9 +1,12 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
 import '../../../domain/catalog.dart';
 import '../../painters/scene_painter.dart';
+import '../adventure/adventure_spec.dart';
+import '../adventure/adventure_worlds.dart';
 import '../story/art_images.dart';
 import 'visual_registry.dart';
 
@@ -16,7 +19,11 @@ class WorldVisualPainter extends CustomPainter {
     this.t = 0,
     this.calm = false,
     this.focusY = 0.55,
+    this.screen = false,
   });
+
+  /// Vollbild (Startbildschirm): Weg-Feld wie in der Abenteuerszene; sonst Vorschaukarte.
+  final bool screen;
   final BackgroundSpec bg;
   final double t;
   final bool calm;
@@ -33,6 +40,24 @@ class WorldVisualPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (bitmapReady(bg.id)) {
       _cover(canvas, size, ArtImages.instance.meadow!);
+      return;
+    }
+    final spec = adventureWorlds[bg.id];
+    if (spec != null) {
+      final side = screen
+          ? math.min(size.width, size.height * 0.55)
+          : math.min(size.width, size.height);
+      final bottom = screen ? size.height * 0.53 : size.height;
+      final box = Rect.fromLTWH(
+        (size.width - side) / 2,
+        bottom - side,
+        side,
+        side,
+      );
+      canvas.save();
+      canvas.clipRect(Offset.zero & size);
+      spec.paintBack(canvas, AdvFrame(size, box, spec.control));
+      canvas.restore();
       return;
     }
     ScenePainter(bg, t: t, calm: calm).paint(canvas, size);
@@ -59,5 +84,9 @@ class WorldVisualPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(WorldVisualPainter o) =>
-      o.bg != bg || o.t != t || o.calm != calm || o.focusY != focusY;
+      o.bg != bg ||
+      o.t != t ||
+      o.calm != calm ||
+      o.focusY != focusY ||
+      o.screen != screen;
 }

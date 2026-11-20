@@ -577,8 +577,12 @@ class StoryStage extends StatefulWidget {
     required this.controller,
     this.countdown,
     this.semanticsLabel = 'Fortschritt',
+    this.stations,
+    this.barColors,
   });
   final StoryController controller;
+  final List<double>? stations;
+  final List<Color>? barColors;
   final int? countdown;
   final String semanticsLabel;
 
@@ -631,6 +635,8 @@ class _StoryStageState extends State<StoryStage> {
               child: StoryProgressBar(
                 progress: widget.controller.progress,
                 label: widget.semanticsLabel,
+                stations: widget.stations,
+                colors: widget.barColors,
               ),
             ),
           ],
@@ -647,9 +653,15 @@ class StoryProgressBar extends StatelessWidget {
     super.key,
     required this.progress,
     required this.label,
+    this.stations,
+    this.colors,
   });
   final ValueListenable<double> progress;
   final String label;
+
+  /// Etappen (Anteil 0…1, erster und letzter Wert = Start/Ziel); ohne Angabe die der Wiese.
+  final List<double>? stations;
+  final List<Color>? colors;
 
   @override
   Widget build(BuildContext context) {
@@ -665,7 +677,7 @@ class StoryProgressBar extends StatelessWidget {
               builder: (context, c) {
                 final w = c.maxWidth;
                 final x = (w * p).clamp(0.0, w);
-                final su = MeadowPath.instance.stationU;
+                final su = stations ?? MeadowPath.instance.stationU;
                 return Stack(
                   clipBehavior: Clip.none,
                   alignment: Alignment.centerLeft,
@@ -693,8 +705,10 @@ class StoryProgressBar extends StatelessWidget {
                       height: 18,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(9),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF7B3FE0), Color(0xFFB97BFF)],
+                        gradient: LinearGradient(
+                          colors:
+                              colors ??
+                              const [Color(0xFF7B3FE0), Color(0xFFB97BFF)],
                         ),
                       ),
                     ),

@@ -11,6 +11,8 @@ import '../../app/perf_monitor.dart';
 import '../../domain/catalog.dart';
 import '../../domain/session_plan.dart';
 import '../../domain/timer_engine.dart';
+import '../art/adventure/adventure_scene.dart';
+import '../art/adventure/adventure_worlds.dart';
 import '../art/story/art_images.dart';
 import '../art/story/story_scene.dart';
 import '../painters/character_painter.dart';
@@ -130,12 +132,24 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         final photoMotif = _motif?.photo != null;
         final storyWanted = recipe.fullScreenStory && !photoMotif;
+        final advWorld = photoMotif ? null : recipe.adventureWorld;
         final imageWanted = recipe.imageBackdrop && !storyWanted;
+        // Welten mit eigener Abenteuerlandschaft zeigen sie auch in den übrigen Timer-Stilen
+        final procWorld =
+            !storyWanted &&
+            !imageWanted &&
+            advWorld == null &&
+            adventureWorlds.containsKey(bg.id);
         final storyOn = storyWanted && ArtImages.instance.ready;
         final calm =
             d.settings.calmMode || MediaQuery.of(context).disableAnimations;
         // klassischer Hintergrund-Takt nur, wenn er sichtbar ist (nicht in Story-Szene/ruhigem Modus)
-        final needBg = !storyWanted && !imageWanted && !calm;
+        final needBg =
+            !storyWanted &&
+            advWorld == null &&
+            !imageWanted &&
+            !procWorld &&
+            !calm;
         if (needBg != _bgNeeded) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _setBgNeeded(needBg);
@@ -166,14 +180,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   powerSave: d.settings.powerSave,
                   spec: character,
                 )
+              else if (advWorld != null)
+                AdventureScene(
+                  key: ValueKey(advWorld.id),
+                  engine: timer.engine,
+                  controller: _story,
+                  fraction: () => timer.displayFraction,
+                  calm: calm,
+                  breakPhase: timer.planView?.isPause ?? false,
+                  powerSave: d.settings.powerSave,
+                  spec: character,
+                  world: advWorld,
+                )
               else if (storyWanted ||
                   (imageWanted && !ArtImages.instance.ready))
                 const ColoredBox(color: Color(0xFF9BD2F5))
-              else if (imageWanted)
+              else if (imageWanted || procWorld)
                 RepaintBoundary(
                   child: CustomPaint(
                     size: Size.infinite,
-                    painter: WorldVisualPainter(bg, calm: true),
+                    painter: WorldVisualPainter(bg, calm: true, screen: true),
                   ),
                 )
               else
@@ -189,9 +215,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     final landscape = c.maxWidth > c.maxHeight * 1.1;
                     final stage = storyWanted && !storyOn
                         ? const SizedBox.shrink()
-                        : storyOn
+                        : (storyOn || advWorld != null)
                         ? StoryStage(
                             controller: _story,
+                            stations: advWorld?.stations,
+                            barColors: advWorld?.barColors,
                             countdown: timer.countdown,
                             semanticsLabel: context.tr(
                               'Fortschritt',

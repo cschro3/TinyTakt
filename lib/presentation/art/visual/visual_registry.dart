@@ -1,6 +1,8 @@
 import 'package:flutter/painting.dart' show Color;
 
 import '../../../domain/catalog.dart';
+import '../adventure/adventure_spec.dart';
+import '../adventure/adventure_worlds.dart';
 import '../figures/registry.dart';
 
 /// Wie hochwertig ist die Darstellung einer Figur/Welt tatsächlich? (ehrliche Einstufung)
@@ -65,6 +67,7 @@ class SceneRecipe {
     required this.style,
     required this.fullScreenStory,
     required this.imageBackdrop,
+    this.adventureWorld,
   });
   final CharacterVisual character;
   final WorldVisual world;
@@ -75,6 +78,9 @@ class SceneRecipe {
 
   /// Hintergrund ist ein echtes Bild (auch für klassische Timer-Stile).
   final bool imageBackdrop;
+
+  /// Eigene, programmatisch gemalte Abenteuerwelt (Weg, Etappen, Ziel) – für alle Welten ohne Bild-Story.
+  final AdventureWorldSpec? adventureWorld;
 
   /// Welche Bilddateien diese Szene braucht.
   List<String> get requiredAssets => [
@@ -175,6 +181,9 @@ class VisualRegistry {
       style: style,
       fullScreenStory: image && w.storyRoute && style == TimerStyle.adventure,
       imageBackdrop: image,
+      adventureWorld: style == TimerStyle.adventure && !(w.storyRoute && image)
+          ? adventureWorlds[worldId]
+          : null,
     );
   }
 
