@@ -14,6 +14,8 @@ import '../rig.dart' show Emotion;
 import '../story/story_quality.dart';
 import '../story/story_scene.dart' show StoryController, StoryDirector;
 import '../visual/character_visual_painter.dart';
+import '../visual/figure_frames.dart';
+import '../visual/visual_registry.dart';
 import 'adventure_spec.dart';
 
 class _Data {
@@ -21,6 +23,7 @@ class _Data {
   Emotion emotion = Emotion.calm;
   bool calm = false, running = false, finished = false;
   StoryTier tier = StoryTier.full;
+  double dpr = 1;
   CharacterSpec? spec;
   AdvFrame? frame;
   final Map<int, double> passedAt = {};
@@ -109,7 +112,7 @@ class _AdventureSceneState extends State<AdventureScene>
       widget.world,
       Listenable.merge([_figTick, _geoTick]),
     );
-    _celebration = _CelebrationPainter(_data, _figTick);
+    _celebration = _CelebrationPainter(_data, widget.world, _figTick);
     _ticker = createTicker((_) => _onTick(_sw.elapsedMicroseconds / 1e6));
     _onTick(0);
   }
@@ -223,7 +226,8 @@ class _AdventureSceneState extends State<AdventureScene>
 
   @override
   Widget build(BuildContext context) {
-    _data.bakedDpr = math.min(MediaQuery.devicePixelRatioOf(context), 2.0);
+    _data.dpr = MediaQuery.devicePixelRatioOf(context);
+    _data.bakedDpr = math.min(_data.dpr, 2.0);
     return LayoutBuilder(
       builder: (context, c) {
         final size = Size(c.maxWidth, c.maxHeight);
@@ -419,18 +423,33 @@ class _FigurePainter extends CustomPainter {
         Paint()..color = const Color(0x33000000),
       );
     }
-    canvas.save();
-    canvas.translate(topLeft.dx, topLeft.dy);
-    CharacterVisualPainter(
-      spec,
-      t: t,
-      mood: mood,
-      calm: d.calm,
-      shadow: false,
-      emotion: d.emotion,
-      emotionT: d.emotionT,
-    ).paint(canvas, Size(side, side));
-    canvas.restore();
+    final rect = topLeft & Size(side, side);
+    // Bild-Figuren (Mira-Mesh) live; Vektor-Figuren als gebackene Frames (siehe FigureFrames)
+    if (VisualRegistry.character(spec.id).renderer ==
+        FigureRenderer.bitmapMesh) {
+      canvas.save();
+      canvas.translate(topLeft.dx, topLeft.dy);
+      CharacterVisualPainter(
+        spec,
+        t: t,
+        mood: mood,
+        calm: d.calm,
+        shadow: false,
+        emotion: d.emotion,
+        emotionT: d.emotionT,
+      ).paint(canvas, Size(side, side));
+      canvas.restore();
+    } else {
+      FigureFrames.instance.paint(
+        canvas,
+        spec,
+        rect,
+        t: t,
+        mood: mood,
+        calm: d.calm,
+        dpr: d.dpr,
+      );
+    }
   }
 
   @override
@@ -438,8 +457,10 @@ class _FigurePainter extends CustomPainter {
 }
 
 class _CelebrationPainter extends CustomPainter {
-  _CelebrationPainter(this.d, Listenable repaint) : super(repaint: repaint);
+  _CelebrationPainter(this.d, this.w, Listenable repaint)
+    : super(repaint: repaint);
   final _Data d;
+  final AdventureWorldSpec w;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -448,7 +469,19 @@ class _CelebrationPainter extends CustomPainter {
         d.emotionT < 0 ||
         d.emotionT > CelebrationPainter.duration)
       return;
+    // Feier am Ziel (nicht in der Bildschirmmitte)
+    final f = d.frame;
+    final goal = f == null
+        ? size.center(Offset.zero)
+        : f.p(w.control.last.dx, w.control.last.dy);
+    final origin = size.center(Offset(0, -size.height * 0.05));
+    canvas.save();
+    canvas.translate(
+      goal.dx - origin.dx,
+      goal.dy - origin.dy - (f?.s ?? 0) * 0.08,
+    );
     CelebrationPainter(et: d.emotionT).paint(canvas, size);
+    canvas.restore();
   }
 
   @override

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tinytakt/domain/catalog.dart';
+import 'package:tinytakt/presentation/art/adventure/adventure_worlds.dart';
 import 'package:tinytakt/presentation/art/visual/visual_registry.dart';
 
 /// Erzeugt docs/ASSET_INVENTAR.md aus der Registry (Bestandsmatrix, Stand des Codes).
@@ -39,7 +40,11 @@ void main() {
     for (final w in backgrounds) {
       final v = VisualRegistry.world(w.id);
       b.writeln(
-        '| ${w.id} | ${w.de} | ${v.hasAsset ? 'premiumAsset' : 'Fallback (prozedural)'} | ${v.renderer.name} | ${v.storyRoute ? 'ja (gemalt)' : 'nein (klassischer Diorama-Weg)'} | ${w.pro ? 'ja' : 'nein'} |',
+        '| ${w.id} | ${w.de} | ${v.hasAsset ? 'premiumAsset' : 'Fallback (prozedural)'} | ${v.renderer.name} | ${v.storyRoute
+            ? 'ja (gemaltes Bild)'
+            : adventureWorlds[w.id] != null
+            ? 'ja (eigene Szene, programmatisch)'
+            : 'nein'} | ${w.pro ? 'ja' : 'nein'} |',
       );
     }
     final m = VisualRegistry.matrix();

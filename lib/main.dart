@@ -13,7 +13,7 @@ import 'data/motif_repository.dart';
 import 'data/parental_gate.dart';
 import 'data/settings_repository.dart';
 import 'data/stores.dart';
-import 'domain/catalog.dart' show TimerStyle;
+import 'domain/catalog.dart' show TimerStyle, backgrounds, characters;
 import 'domain/clock.dart';
 import 'domain/timer_engine.dart';
 import 'platform/apple_music_service.dart';
@@ -100,6 +100,20 @@ Future<void> main() async {
         ),
       );
       await prefs.setString(key, buildSha);
+    }
+    // Nur Staging: ?world=space&char=dog&style=adventure wählt die Kombination beim Laden direkt vor.
+    final q = Uri.base.queryParameters;
+    final w = backgrounds.where((b) => b.id == q['world']);
+    final c = characters.where((x) => x.id == q['char']);
+    final st = TimerStyle.values.where((x) => x.name == q['style']);
+    if (w.isNotEmpty || c.isNotEmpty || st.isNotEmpty) {
+      await settings.updateProfile(
+        (p) => p.copyWith(
+          backgroundId: w.isNotEmpty ? w.first.id : null,
+          characterId: c.isNotEmpty ? c.first.id : null,
+          style: st.isNotEmpty ? st.first : null,
+        ),
+      );
     }
   }
   runApp(TinyTaktApp(deps: deps));

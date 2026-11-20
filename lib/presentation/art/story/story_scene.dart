@@ -12,7 +12,7 @@ import '../../../app/perf_monitor.dart';
 import '../../../domain/catalog.dart' show CharacterSpec;
 import '../../painters/character_painter.dart' show Mood;
 import '../art_kit.dart';
-import '../visual/character_visual_painter.dart';
+import '../visual/figure_frames.dart';
 import '../visual/visual_registry.dart';
 import '../celebration.dart';
 import '../figures/registry.dart';
@@ -421,21 +421,19 @@ class _MiraPainter extends CustomPainter {
         : d.running
         ? Mood.active
         : Mood.idle;
-    canvas.save();
-    canvas.translate(
+    final top = Offset(
       feet.dx - side / 2,
       feet.dy - side * 0.965 - step * h * 0.08,
     );
-    CharacterVisualPainter(
+    FigureFrames.instance.paint(
+      canvas,
       spec,
+      top & Size(side, side),
       t: d.t,
       mood: mood,
       calm: d.calm,
-      shadow: true,
-      emotion: d.emotion,
-      emotionT: d.emotionT,
-    ).paint(canvas, Size(side, side));
-    canvas.restore();
+      dpr: d.dpr,
+    );
   }
 
   @override

@@ -64,7 +64,8 @@ class AdvFrame {
   double depth(Offset o) => ((o.dy - box.top) / box.height).clamp(0.0, 1.0);
 
   @override
-  bool operator ==(Object o) => o is AdvFrame && o.size == size && o.box == box;
+  bool operator ==(Object other) =>
+      other is AdvFrame && other.size == size && other.box == box;
   @override
   int get hashCode => Object.hash(size, box);
 }

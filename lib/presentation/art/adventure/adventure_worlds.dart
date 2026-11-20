@@ -103,8 +103,8 @@ final AdventureWorldSpec _space = AdventureWorldSpec(
     Offset(0.44, 0.58),
     Offset(0.24, 0.44),
     Offset(0.46, 0.32),
-    Offset(0.70, 0.24),
-    Offset(0.82, 0.16),
+    Offset(0.60, 0.30),
+    Offset(0.74, 0.23),
   ],
   stations: _st,
   scaleFar: 0.20,
@@ -192,7 +192,7 @@ final AdventureWorldSpec _space = AdventureWorldSpec(
     }
     pathRibbon(c, f, _space, dash: 0.007);
     // Raumstation (Ziel)
-    final g = f.p(0.82, 0.16);
+    final g = f.p(0.74, 0.23);
     final u = f.s * 0.075;
     c.drawRect(
       Rect.fromCenter(center: g, width: u * 3.6, height: u * 0.28),
