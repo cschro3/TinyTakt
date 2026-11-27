@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../domain/catalog.dart';
 import '../../painters/character_painter.dart';
+import '../adventure/adventure_gear.dart';
 import '../figures/registry.dart';
 import '../rig.dart';
 import '../story/art_images.dart';
@@ -13,6 +14,9 @@ import 'visual_registry.dart';
 /// Gemeinsamer Figuren-Renderer für ALLE Ansichten (Auswahlkarte, Startbildschirm, Timer-Bühne,
 /// Avatar, Erfolg). Wählt anhand der [VisualRegistry] das Premium-Asset, sonst den dokumentierten
 /// Vektor-Fallback. Eine Figur sieht dadurch überall gleich aus.
+/// Verschiebung der vorderen Ausrüstung nach unten (Anteil der Figurenhöhe).
+const double headOffset = 0.085;
+
 class CharacterVisualPainter extends CustomPainter {
   CharacterVisualPainter(
     this.spec, {
@@ -22,6 +26,7 @@ class CharacterVisualPainter extends CustomPainter {
     this.shadow = true,
     this.emotion,
     this.emotionT = 0,
+    this.gearWorld,
   }) : _fallback = CharacterPainter(
          spec,
          t: t,
@@ -39,6 +44,9 @@ class CharacterVisualPainter extends CustomPainter {
   final bool shadow;
   final Emotion? emotion;
   final double emotionT;
+
+  /// Welt-ID für die Abenteuer-Ausrüstung (null = keine). Sitzt nur auf Figuren mit Kopf.
+  final String? gearWorld;
   final CharacterPainter _fallback;
 
   /// Bild-Figur steht zum Zeichnen bereit?
@@ -56,6 +64,30 @@ class CharacterVisualPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final gear = gearWorld == null || !gearFits(spec)
+        ? null
+        : gearForWorld(gearWorld!);
+    if (gear == null) {
+      _paintFigure(canvas, size);
+      return;
+    }
+    final side = math.min(size.width, size.height);
+    final origin = Offset((size.width - side) / 2, (size.height - side) / 2);
+    void layer(void Function(Canvas, double)? f, {double dy = 0}) {
+      if (f == null) return;
+      canvas.save();
+      canvas.translate(origin.dx, origin.dy + dy * side);
+      f(canvas, side);
+      canvas.restore();
+    }
+
+    layer(gear.back);
+    _paintFigure(canvas, size);
+    // Kopfteile sitzen ~8,5 % tiefer als im Gear-Entwurf (Gesichtsmitte der Figuren)
+    layer(gear.front, dy: headOffset);
+  }
+
+  void _paintFigure(Canvas canvas, Size size) {
     final visual = VisualRegistry.character(spec.id);
     if (visual.renderer != FigureRenderer.bitmapMesh) {
       _fallback.paint(canvas, size);
@@ -100,5 +132,6 @@ class CharacterVisualPainter extends CustomPainter {
       o.calm != calm ||
       o.emotion != emotion ||
       o.emotionT != emotionT ||
+      o.gearWorld != gearWorld ||
       o.shadow != shadow;
 }

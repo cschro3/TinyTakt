@@ -130,6 +130,9 @@ class SettingsRepository extends ChangeNotifier {
   List<KidProfile> profiles = const [KidProfile(id: 'p1', nickname: 'Ich')];
   List<TimerTemplate> templates = const [];
   List<String> customMotifs = const [];
+
+  /// Lieblingsfiguren (Figuren-IDs) – lokal gespeichert, ohne Einfluss auf Pro-Rechte.
+  List<String> favorites = const [];
   AppleMusicTrack? appleMusic;
   SessionPlan? plan;
 
@@ -177,9 +180,20 @@ class SettingsRepository extends ChangeNotifier {
       customMotifs =
           (m['customMotifs'] as List?)?.whereType<String>().toList() ??
           const [];
+      favorites =
+          (m['favorites'] as List?)?.whereType<String>().toList() ?? const [];
     } catch (_) {
       // Beschädigte Einstellungen: Standardwerte behalten.
     }
+  }
+
+  bool isFavorite(String id) => favorites.contains(id);
+
+  Future<void> toggleFavorite(String id) {
+    favorites = isFavorite(id)
+        ? favorites.where((x) => x != id).toList()
+        : [...favorites, id];
+    return _save();
   }
 
   double _d(Object? v, double fallback) =>
@@ -207,6 +221,7 @@ class SettingsRepository extends ChangeNotifier {
         'profiles': profiles.map((p) => p.toJson()).toList(),
         'templates': templates.map((t) => t.toJson()).toList(),
         'customMotifs': customMotifs,
+        'favorites': favorites,
         'appleMusic': appleMusic?.toJson(),
         'plan': plan?.toJson(),
       }),

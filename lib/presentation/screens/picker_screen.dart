@@ -8,6 +8,7 @@ import '../../app/deps.dart';
 import '../../domain/catalog.dart';
 import '../../platform/apple_music_service.dart';
 import '../art/story/art_images.dart';
+import '../widgets/character_sheet.dart';
 import '../art/visual/character_visual_painter.dart';
 import '../art/visual/world_visual_painter.dart';
 import '../painters/picture_painters.dart';
@@ -202,8 +203,8 @@ void _paintTileChrome(Canvas c, Size s, bool selected) {
   ).paint(c, Offset.zero & s, borderRadius: BorderRadius.circular(r));
 }
 
-class _Tile extends StatelessWidget {
-  const _Tile({
+class _TileBase extends StatelessWidget {
+  const _TileBase({
     required this.selected,
     required this.locked,
     required this.label,
@@ -345,6 +346,115 @@ class _Tile extends StatelessWidget {
   }
 }
 
+/// Karte mit optionalen Galerie-Knöpfen (Favorit, Profil) – außerhalb der Karten-Semantik, damit sie
+/// einzeln bedienbar und vorlesbar bleiben.
+class _Tile extends StatelessWidget {
+  const _Tile({
+    required this.selected,
+    required this.locked,
+    required this.label,
+    required this.child,
+    required this.onTap,
+    this.favorite,
+    this.onFavorite,
+    this.onInfo,
+  });
+  final bool selected, locked;
+  final String label;
+  final Widget child;
+  final VoidCallback onTap;
+  final bool? favorite;
+  final VoidCallback? onFavorite, onInfo;
+
+  @override
+  Widget build(BuildContext context) {
+    final base = _TileBase(
+      selected: selected,
+      locked: locked,
+      label: label,
+      onTap: onTap,
+      child: child,
+    );
+    if (onFavorite == null && onInfo == null) return base;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        base,
+        if (onFavorite != null)
+          Positioned(
+            left: 2,
+            top: 2,
+            child: _MiniButton(
+              icon: favorite == true
+                  ? Icons.star_rounded
+                  : Icons.star_outline_rounded,
+              color: favorite == true ? const Color(0xFFFFB300) : Brand.ink,
+              semantics: favorite == true
+                  ? context.tr(
+                      'Aus Favoriten entfernen',
+                      'Remove from favourites',
+                    )
+                  : context.tr('Zu Favoriten', 'Add to favourites'),
+              onTap: onFavorite!,
+            ),
+          ),
+        if (onInfo != null)
+          Positioned(
+            right: 2,
+            bottom: 36,
+            child: _MiniButton(
+              icon: Icons.info_outline_rounded,
+              color: Brand.indigo,
+              semantics: context.tr('Steckbrief öffnen', 'Open profile'),
+              onTap: onInfo!,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Kleiner runder Knopf mit 44-dp-Trefferfläche.
+class _MiniButton extends StatelessWidget {
+  const _MiniButton({
+    required this.icon,
+    required this.color,
+    required this.semantics,
+    required this.onTap,
+  });
+  final IconData icon;
+  final Color color;
+  final String semantics;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: semantics,
+    excludeSemantics: true,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Center(
+          child: Container(
+            width: 30,
+            height: 30,
+            decoration: const BoxDecoration(
+              color: Color(0xE6FFFFFF),
+              shape: BoxShape.circle,
+              boxShadow: [BoxShadow(color: Color(0x33000000), blurRadius: 4)],
+            ),
+            child: Icon(icon, size: 20, color: color),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 SliverGridDelegate _grid(double extent) =>
     SliverGridDelegateWithMaxCrossAxisExtent(
       maxCrossAxisExtent: extent,
@@ -365,6 +475,39 @@ class _Characters extends StatelessWidget {
       listenable: _pickerListenable(d),
       builder: (context, _) {
         final sel = d.settings.profile.characterId;
+        Widget charTile(CharacterSpec c) {
+          final locked = c.pro && !d.isPro;
+          return _Tile(
+            selected: sel == c.id,
+            locked: locked,
+            label: context.isDe ? c.de : c.en,
+            favorite: d.settings.isFavorite(c.id),
+            onFavorite: () => d.settings.toggleFavorite(c.id),
+            onInfo: () => showCharacterSheet(context, c),
+            onTap: () => locked
+                ? openPro(context)
+                : d.settings.updateProfile(
+                    (p) => p.copyWith(characterId: c.id),
+                  ),
+            child: CachedPreview(
+              cacheKey:
+                  'char:${c.id}:${CharacterVisualPainter.bitmapReady(c.id)}',
+              alsoBakeDelta: _altSizeDelta(sel == c.id),
+              margin: const Offset(
+                14,
+                14,
+              ), // Überhang (Funkeln, Schatten) bleibt erhalten
+              opacity: locked ? 0.6 : 1,
+              paint: (cv, sz) =>
+                  CharacterVisualPainter(c, shadow: false).paint(cv, sz),
+            ),
+          );
+        }
+
+        final favs = [
+          for (final id in d.settings.favorites)
+            ...characters.where((c) => c.id == id),
+        ];
         return CustomScrollView(
           scrollCacheExtent: eager
               ? const ScrollCacheExtent.pixels(200000)
@@ -401,6 +544,19 @@ class _Characters extends StatelessWidget {
                 ),
               ),
             ],
+            if (favs.isNotEmpty) ...[
+              SliverToBoxAdapter(
+                child: _Header(context.tr('Meine Favoriten', 'My favourites')),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                sliver: SliverGrid.builder(
+                  gridDelegate: _grid(130),
+                  itemCount: favs.length,
+                  itemBuilder: (_, i) => charTile(favs[i]),
+                ),
+              ),
+            ],
             for (final cat in CharacterCategory.values) ...[
               SliverToBoxAdapter(
                 child: _Header(context.isDe ? cat.de : cat.en),
@@ -410,34 +566,7 @@ class _Characters extends StatelessWidget {
                 sliver: SliverGrid.builder(
                   gridDelegate: _grid(130),
                   itemCount: _charsByCategory[cat]!.length,
-                  itemBuilder: (_, i) {
-                    final c = _charsByCategory[cat]![i];
-                    final locked = c.pro && !d.isPro;
-                    return _Tile(
-                      selected: sel == c.id,
-                      locked: locked,
-                      label: context.isDe ? c.de : c.en,
-                      onTap: () => locked
-                          ? openPro(context)
-                          : d.settings.updateProfile(
-                              (p) => p.copyWith(characterId: c.id),
-                            ),
-                      child: CachedPreview(
-                        cacheKey:
-                            'char:${c.id}:${CharacterVisualPainter.bitmapReady(c.id)}',
-                        alsoBakeDelta: _altSizeDelta(sel == c.id),
-                        margin: const Offset(
-                          14,
-                          14,
-                        ), // Überhang (Funkeln, Schatten) bleibt erhalten
-                        opacity: locked ? 0.6 : 1,
-                        paint: (cv, sz) => CharacterVisualPainter(
-                          c,
-                          shadow: false,
-                        ).paint(cv, sz),
-                      ),
-                    );
-                  },
+                  itemBuilder: (_, i) => charTile(_charsByCategory[cat]![i]),
                 ),
               ),
             ],
