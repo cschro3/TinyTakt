@@ -114,7 +114,7 @@ final AdventureWorldSpec _space = AdventureWorldSpec(
   pathFill: const Color(0x1FBFE8FF),
   pathEdge: const Color(0x77BFE8FF),
   floating: true,
-  bubble: true,
+  bubble: false,
   barColors: const [Color(0xFF3FB8FF), Color(0xFFB97BFF)],
   paintBack: (c, f) {
     skyFill(c, f.size, const [
@@ -1463,7 +1463,7 @@ final AdventureWorldSpec _underwater = AdventureWorldSpec(
   pathFill: const Color(0xFFFFEFC0),
   pathEdge: const Color(0xFFB89868),
   floating: true,
-  bubble: true,
+  bubble: false,
   barColors: const [Color(0xFF12A8D0), Color(0xFF8AF0E0)],
   paintBack: (c, f) {
     final w = f.size.width;

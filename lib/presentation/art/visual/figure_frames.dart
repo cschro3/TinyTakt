@@ -53,9 +53,11 @@ class FigureFrames {
     required Mood mood,
     required bool calm,
     required double dpr,
+    String? gearWorld,
   }) {
     final px = (((rect.width * dpr).clamp(96.0, 320.0)) / 32).ceil() * 32;
-    final key = '${spec.id}|${mood.name}|${calm ? 'c' : 'a'}|$px';
+    final key =
+        '${spec.id}|${mood.name}|${calm ? 'c' : 'a'}|$px|${gearWorld ?? ''}';
     final group = _groups.putIfAbsent(
       key,
       () => List<ui.Image?>.filled(calm ? 1 : frameCount, null),
@@ -67,7 +69,7 @@ class FigureFrames {
     final idx = n == 1 ? 0 : (((t % period) / period) * n).floor() % n;
     var img = group[idx];
     if (img == null) {
-      img = _bake(spec, mood, calm, px, idx, n);
+      img = _bake(spec, mood, calm, px, idx, n, gearWorld);
       if (img != null) {
         group[idx] = img;
         _bytes += img.width * img.height * 4;
@@ -95,6 +97,7 @@ class FigureFrames {
     int px,
     int idx,
     int n,
+    String? gearWorld,
   ) {
     try {
       final rec = ui.PictureRecorder();
@@ -107,6 +110,7 @@ class FigureFrames {
         mood: mood,
         calm: calm,
         shadow: false,
+        gearWorld: gearWorld,
       ).paint(c, const Size(100, 100));
       final pic = rec.endRecording();
       final img = pic.toImageSync(px, px);

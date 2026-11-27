@@ -104,6 +104,7 @@ void main() {
     );
     // ignore: avoid_print
     print('PICKER $label ${jsonEncode(res)}');
+    Directory('build/perf').createSync(recursive: true);
     File('build/perf/picker_$label.json')
         .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(res));
     await t.pumpWidget(const SizedBox());

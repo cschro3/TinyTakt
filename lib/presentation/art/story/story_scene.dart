@@ -12,6 +12,7 @@ import '../../../app/perf_monitor.dart';
 import '../../../domain/catalog.dart' show CharacterSpec;
 import '../../painters/character_painter.dart' show Mood;
 import '../art_kit.dart';
+import '../adventure/adventure_gear.dart';
 import '../visual/figure_frames.dart';
 import '../visual/visual_registry.dart';
 import '../celebration.dart';
@@ -433,6 +434,7 @@ class _MiraPainter extends CustomPainter {
       mood: mood,
       calm: d.calm,
       dpr: d.dpr,
+      gearWorld: 'meadow',
     );
   }
 
@@ -495,7 +497,20 @@ class _MiraPainter extends CustomPainter {
         h * 0.9,
         (-pose.bodyDy).clamp(0.0, 0.4) * 2,
       );
+      // Blumenkranz (Ausrüstung der Wiese) um Miras Kopf
+      final gearSide = h / 0.9;
+      void gear(void Function(Canvas, double)? f) {
+        if (f == null) return;
+        canvas.save();
+        canvas.translate(feet.dx - gearSide / 2, feet.dy - gearSide * 0.95);
+        f(canvas, gearSide);
+        canvas.restore();
+      }
+
+      final meadowGear = gearForWorld('meadow');
+      gear(meadowGear?.back);
       MiraMesh.paint(canvas, mesh!, feet, h, pose, t, calm: calm);
+      gear(meadowGear?.front);
       if (!calm) {
         MiraMesh.sparkles(
           canvas,

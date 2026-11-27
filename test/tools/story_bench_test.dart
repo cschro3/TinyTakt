@@ -83,6 +83,7 @@ void main() {
       'bereit': idle,
       'laeuft': running,
     };
+    Directory('build/perf').createSync(recursive: true);
     File('build/perf/bench_$label.json')
         .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(out));
     await env.timer.stop();

@@ -9,6 +9,7 @@ import '../../../app/perf_monitor.dart';
 import '../../../domain/catalog.dart' show CharacterSpec;
 import '../../../domain/timer_engine.dart';
 import '../../painters/character_painter.dart' show Mood;
+import '../art_kit.dart' show smoothstep;
 import '../celebration.dart';
 import '../rig.dart' show Emotion;
 import '../story/story_quality.dart';
@@ -359,6 +360,56 @@ class _AmbientPainter extends CustomPainter {
   bool shouldRepaint(_AmbientPainter old) => false;
 }
 
+/// Bewegung der Figur auf dem Weg (rein darstellend, nur aus Timer-Zustand abgeleitet):
+/// Gehen mit Federn (kurz vor dem Ziel lebhafter), Hüpfer bei erreichter Etappe, Jubeln am Ende,
+/// leichtes Winken/Wiegen bei Begrüßung/Start/Ermutigung und seitliches Ausweichen am Ziel,
+/// damit die Figur das Zielobjekt nicht verdeckt. Ruhiger Modus: keine Bewegung außer dem Ausweichen.
+class FigureMotion {
+  const FigureMotion(this.lift, this.rot, this.dx, this.step);
+  final double lift, rot, dx, step;
+
+  factory FigureMotion.compute({
+    required double u,
+    required double t,
+    required bool running,
+    required bool finished,
+    required bool calm,
+    required Emotion emotion,
+    required double emotionT,
+    required Map<int, double> passedAt,
+    required double side,
+    required bool goalRight,
+  }) {
+    final dx = smoothstep(0.92, 1.0, u) * side * 0.55 * (goalRight ? -1 : 1);
+    if (calm) return FigureMotion(0, 0, dx, 0);
+    final near = running && u > 0.9;
+    final cadence = near ? 7.4 : 5.6;
+    final step = running ? math.sin(t * cadence).abs() : 0.0;
+    var lift = -step * side * (near ? 0.10 : 0.07);
+    for (final at in passedAt.values) {
+      final age = t - at;
+      if (age >= 0 && age < 0.9)
+        lift -= math.sin(math.pi * age / 0.9) * side * 0.16;
+    }
+    if (finished && emotionT >= 0 && emotionT < CelebrationPainter.duration) {
+      lift -=
+          math.sin(emotionT * 5).abs() *
+          side *
+          0.14 *
+          (1 - 0.5 * emotionT / CelebrationPainter.duration);
+    }
+    var rot = 0.0;
+    final gesture =
+        emotion == Emotion.greet ||
+        emotion == Emotion.encourage ||
+        emotion == Emotion.cheer;
+    if (gesture && emotionT >= 0 && emotionT < 2.4) {
+      rot = math.sin(t * 7) * 0.07 * (1 - emotionT / 2.4);
+    }
+    return FigureMotion(lift, rot, dx, step);
+  }
+}
+
 class _FigurePainter extends CustomPainter {
   _FigurePainter(this.d, this.w, Listenable repaint) : super(repaint: repaint);
   final _Data d;
@@ -374,8 +425,21 @@ class _FigurePainter extends CustomPainter {
     var side = f.s * (w.scaleFar + (w.scaleNear - w.scaleFar) * depth) * 1.1;
     if (d.finished) side *= 0.92;
     final t = d.t;
-    final step = d.running && !d.calm ? math.sin(t * 5.6).abs() : 0.0;
-    var lift = -step * side * 0.07;
+    final goalRight = w.control.last.dx > 0.5;
+    final m = FigureMotion.compute(
+      u: d.u,
+      t: t,
+      running: d.running,
+      finished: d.finished,
+      calm: d.calm,
+      emotion: d.emotion,
+      emotionT: d.emotionT,
+      passedAt: d.passedAt,
+      side: side,
+      goalRight: goalRight,
+    );
+    final step = m.step;
+    var lift = m.lift;
     if (w.floating)
       lift -= side * 0.10 + (d.calm ? 0 : math.sin(t * 1.6) * side * 0.025);
     final mood = d.finished
@@ -385,7 +449,10 @@ class _FigurePainter extends CustomPainter {
         : d.running
         ? Mood.active
         : Mood.idle;
-    final topLeft = Offset(pos.dx - side / 2, pos.dy - side * 0.955 + lift);
+    final topLeft = Offset(
+      pos.dx + m.dx - side / 2,
+      pos.dy - side * 0.955 + lift,
+    );
     if (w.bubble) {
       final ctr = topLeft + Offset(side / 2, side * 0.52);
       final r = side * 0.62;
@@ -416,12 +483,19 @@ class _FigurePainter extends CustomPainter {
     if (!w.floating) {
       canvas.drawOval(
         Rect.fromCenter(
-          center: pos.translate(0, side * 0.01),
-          width: side * (0.5 - step * 0.05),
+          center: pos.translate(m.dx, side * 0.01),
+          width: side * (0.5 - step * 0.05 + lift * 0.1 / side),
           height: side * 0.09,
         ),
         Paint()..color = const Color(0x33000000),
       );
+    }
+    canvas.save();
+    if (m.rot != 0) {
+      final feet = Offset(pos.dx + m.dx, pos.dy + lift);
+      canvas.translate(feet.dx, feet.dy);
+      canvas.rotate(m.rot);
+      canvas.translate(-feet.dx, -feet.dy);
     }
     final rect = topLeft & Size(side, side);
     // Bild-Figuren (Mira-Mesh) live; Vektor-Figuren als gebackene Frames (siehe FigureFrames)
@@ -437,6 +511,7 @@ class _FigurePainter extends CustomPainter {
         shadow: false,
         emotion: d.emotion,
         emotionT: d.emotionT,
+        gearWorld: w.id,
       ).paint(canvas, Size(side, side));
       canvas.restore();
     } else {
@@ -448,8 +523,10 @@ class _FigurePainter extends CustomPainter {
         mood: mood,
         calm: d.calm,
         dpr: d.dpr,
+        gearWorld: w.id,
       );
     }
+    canvas.restore();
   }
 
   @override
